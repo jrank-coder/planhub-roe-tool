@@ -28,8 +28,8 @@ input,select,textarea{font-family:var(--f)}
 .header-title{font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--tl);border-left:2px solid var(--teal);padding-left:14px}
 
 /* ── Tabs ── */
-.nav-tabs{display:flex;background:#1a252f;border-bottom:1px solid var(--bg3);padding:0 24px}
-.nav-tab{padding:13px 22px;font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--gl);background:none;border:none;border-bottom:3px solid transparent;transition:.2s;white-space:nowrap}
+.nav-tabs{display:flex;background:#1a252f;border-bottom:1px solid var(--bg3);padding:0 24px;overflow-x:auto}
+.nav-tab{padding:13px 20px;font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--gl);background:none;border:none;border-bottom:3px solid transparent;transition:.2s;white-space:nowrap}
 .nav-tab:hover{color:var(--wh)}
 .nav-tab.active{color:var(--teal);border-bottom-color:var(--teal)}
 
@@ -37,113 +37,65 @@ input,select,textarea{font-family:var(--f)}
 .main{padding:24px;max-width:760px;margin:0 auto}
 .tab-pane{display:none}.tab-pane.active{display:block}
 
-/* ── Cards / Sections ── */
-.section{background:var(--bg2);border:1px solid rgba(0,184,148,.2);border-radius:8px;padding:20px;margin-bottom:16px}
-.section-title{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--teal);margin-bottom:16px}
-
 /* ── Form fields ── */
 .field{margin-bottom:16px}
-.field:last-child{margin-bottom:0}
 .field label{display:block;font-size:.8rem;font-weight:600;color:var(--gl);margin-bottom:6px}
-.field input,.field select,.field textarea{
+.field .req{color:var(--red)}
+.field input,.field textarea{
   width:100%;padding:9px 12px;background:#1a252f;
   border:1px solid var(--bg3);border-radius:6px;
   color:var(--wh);font-size:.875rem;transition:.2s
 }
-.field input:focus,.field select,.field textarea:focus{outline:none;border-color:var(--teal)}
-.field select option{background:#1a252f}
-.field textarea{resize:vertical;min-height:80px;line-height:1.5}
+.field input:focus,.field textarea:focus{outline:none;border-color:var(--teal)}
 .field input::placeholder,.field textarea::placeholder{color:var(--gr)}
+.field textarea{resize:vertical;min-height:72px;line-height:1.5}
 
-/* ── Toggle buttons ── */
-.toggle-group{display:flex;gap:8px;flex-wrap:wrap}
-.toggle-btn{
-  padding:7px 18px;border-radius:20px;
-  border:1px solid var(--bg3);background:transparent;
-  color:var(--gl);font-size:.8rem;font-weight:600;transition:.2s
+/* ── Situation buttons ── */
+.sit-grid{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px}
+.sit-btn{
+  padding:9px 16px;border-radius:6px;
+  border:1px solid var(--bg3);background:var(--bg2);
+  color:var(--gl);font-size:.82rem;font-weight:600;transition:.2s;text-align:left
 }
-.toggle-btn:hover{border-color:var(--teal);color:var(--teal)}
-.toggle-btn.active{background:rgba(0,184,148,.15);border-color:var(--teal);color:var(--teal)}
+.sit-btn:hover{border-color:var(--teal);color:var(--teal)}
+.sit-btn.active{background:rgba(0,184,148,.15);border-color:var(--teal);color:var(--teal)}
 
-/* ── Conditional rows ── */
-.conditional{display:none}
-.conditional.visible{display:block}
+/* ── Conditional ── */
+.conditional{display:none}.conditional.visible{display:block}
 
 /* ── Submit button ── */
 .btn-submit{
-  width:100%;padding:13px;margin-top:8px;
+  width:100%;padding:12px;margin-top:4px;
   background:linear-gradient(135deg,var(--teal),#00a884);
   color:#1a252f;border:none;border-radius:6px;
-  font-size:.95rem;font-weight:800;text-transform:uppercase;
+  font-size:.9rem;font-weight:800;text-transform:uppercase;
   letter-spacing:1px;transition:.2s
 }
-.btn-submit:hover{opacity:.9;transform:translateY(-1px)}
-.btn-submit:disabled{opacity:.45;cursor:not-allowed;transform:none}
+.btn-submit:hover{opacity:.9}.btn-submit:disabled{opacity:.4;cursor:not-allowed}
 
-/* ── Loading state ── */
-.loading{display:none;text-align:center;padding:40px 20px}
-.loading.visible{display:block}
-.spinner{width:36px;height:36px;border:3px solid var(--bg3);border-top-color:var(--teal);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 14px}
-@keyframes spin{to{transform:rotate(360deg)}}
-.loading-text{color:var(--gl);font-size:.875rem;font-weight:600}
-
-/* ── Result card ── */
-.result{display:none}
-.result.visible{display:block}
-.verdict-badge{
-  display:flex;align-items:center;gap:12px;
-  padding:14px 20px;border-radius:8px;margin-bottom:20px;
-  border:1px solid;font-size:1.1rem;font-weight:800
-}
-.verdict-badge.eligible{background:rgba(46,204,113,.12);border-color:var(--green);color:var(--green)}
-.verdict-badge.conditional{background:rgba(241,196,15,.12);border-color:var(--yellow);color:var(--yellow)}
-.verdict-badge.not-eligible{background:rgba(231,76,60,.12);border-color:var(--red);color:var(--red)}
-.verdict-icon{font-size:1.4rem}
-.result-body{color:var(--gl);line-height:1.65;font-size:.875rem}
-.result-body h2{color:var(--teal);font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;margin:18px 0 8px}
-.result-body h2:first-child{margin-top:0}
-.result-body ul{padding-left:18px;margin:0}
-.result-body li{margin-bottom:5px}
-.result-body p{margin-bottom:10px}
-.result-body p:last-child{margin-bottom:0}
-
-.btn-reset{
-  margin-top:16px;padding:9px 20px;
-  background:transparent;border:1px solid var(--bg3);
-  border-radius:6px;color:var(--gl);font-size:.8rem;
-  font-weight:600;transition:.2s
-}
-.btn-reset:hover{border-color:var(--teal);color:var(--teal)}
-
-.error-msg{
-  padding:14px 18px;background:rgba(231,76,60,.1);
-  border:1px solid var(--red);border-radius:8px;
-  color:var(--red);font-size:.875rem;line-height:1.5
-}
-
-/* ── Q&A Chat ── */
+/* ── Chat (shared by Eligibility + Q&A) ── */
 .chat-messages{
-  min-height:300px;max-height:520px;overflow-y:auto;
+  min-height:260px;max-height:500px;overflow-y:auto;
   padding:16px;background:#1a252f;border-radius:8px;
   border:1px solid var(--bg3);margin-bottom:14px;
   display:flex;flex-direction:column;gap:14px
 }
 .chat-empty{
-  display:flex;align-items:center;justify-content:center;
-  flex:1;text-align:center;color:var(--gr);font-size:.875rem;
-  padding:40px 20px;flex-direction:column;gap:10px
+  align-self:center;text-align:center;color:var(--gr);
+  font-size:.875rem;padding:40px 20px;flex-direction:column;
+  display:flex;gap:8px;align-items:center
 }
 .chat-empty .hint{font-size:.78rem;color:var(--bg3)}
-.msg{max-width:88%;line-height:1.6;font-size:.875rem}
+.msg{max-width:90%;line-height:1.65;font-size:.875rem}
 .msg-user{
   align-self:flex-end;background:rgba(0,184,148,.15);
   border:1px solid rgba(0,184,148,.3);border-radius:14px 14px 3px 14px;
-  padding:10px 14px;color:var(--wh)
+  padding:10px 14px;color:var(--wh);white-space:pre-line
 }
 .msg-assistant{
   align-self:flex-start;background:var(--bg2);
   border:1px solid var(--bg3);border-radius:14px 14px 14px 3px;
-  padding:10px 14px;color:var(--gl)
+  padding:12px 14px;color:var(--gl)
 }
 .msg-assistant h2{color:var(--teal);font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;margin:14px 0 6px}
 .msg-assistant h2:first-child{margin-top:0}
@@ -152,6 +104,9 @@ input,select,textarea{font-family:var(--f)}
 .msg-assistant p{margin-bottom:8px}
 .msg-assistant p:last-child{margin-bottom:0}
 .msg-assistant strong{color:var(--wh)}
+.msg-assistant table{width:100%;border-collapse:collapse;margin:8px 0;font-size:.8rem}
+.msg-assistant th{text-align:left;padding:5px 8px;color:var(--teal);border-bottom:1px solid var(--bg3);font-size:.7rem;text-transform:uppercase}
+.msg-assistant td{padding:6px 8px;border-bottom:1px solid #1a252f}
 
 .typing-indicator{
   align-self:flex-start;background:var(--bg2);
@@ -179,12 +134,38 @@ input,select,textarea{font-family:var(--f)}
 }
 .btn-send:hover{opacity:.85}.btn-send:disabled{opacity:.4;cursor:not-allowed}
 
-.btn-clear{
-  margin-top:10px;padding:7px 16px;background:transparent;
-  border:1px solid var(--bg3);border-radius:6px;color:var(--gr);
-  font-size:.75rem;transition:.2s
+/* ── Verdict card ── */
+.verdict-card{
+  border-radius:8px;padding:16px 20px;margin-bottom:16px;
+  border:1px solid;display:none
 }
-.btn-clear:hover{border-color:var(--red);color:var(--red)}
+.verdict-card.visible{display:block}
+.verdict-card.eligible{background:rgba(46,204,113,.1);border-color:var(--green)}
+.verdict-card.conditional{background:rgba(241,196,15,.1);border-color:var(--yellow)}
+.verdict-card.not-eligible{background:rgba(231,76,60,.1);border-color:var(--red)}
+.verdict-header{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.verdict-icon{font-size:1.4rem}
+.verdict-label{font-size:1rem;font-weight:800}
+.verdict-card.eligible .verdict-label{color:var(--green)}
+.verdict-card.conditional .verdict-label{color:var(--yellow)}
+.verdict-card.not-eligible .verdict-label{color:var(--red)}
+.verdict-body{color:var(--gl);font-size:.85rem;line-height:1.65}
+.verdict-body h2{color:var(--teal);font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;margin:14px 0 6px}
+.verdict-body h2:first-child{margin-top:0}
+.verdict-body ul{padding-left:16px;margin:4px 0 8px}
+.verdict-body li{margin-bottom:4px}
+.verdict-body p{margin-bottom:8px}
+.verdict-body p:last-child{margin-bottom:0}
+.verdict-body strong{color:var(--wh)}
+
+/* ── Utility buttons ── */
+.btn-ghost{
+  padding:8px 16px;background:transparent;border:1px solid var(--bg3);
+  border-radius:6px;color:var(--gl);font-size:.78rem;font-weight:600;transition:.2s
+}
+.btn-ghost:hover{border-color:var(--teal);color:var(--teal)}
+.btn-danger{border-color:var(--bg3);color:var(--gr)}
+.btn-danger:hover{border-color:var(--red);color:var(--red)}
 
 /* ── Sample questions ── */
 .sample-qs{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
@@ -195,12 +176,54 @@ input,select,textarea{font-family:var(--f)}
 }
 .sample-q:hover{border-color:var(--teal);color:var(--teal);background:rgba(0,184,148,.05)}
 
+/* ── ROE Reference accordion ── */
+.roe-intro{color:var(--gl);font-size:.85rem;line-height:1.6;margin-bottom:20px;padding:14px 16px;background:var(--bg2);border-radius:8px;border:1px solid rgba(0,184,148,.2)}
+.accordion{margin-bottom:8px}
+.acc-header{
+  width:100%;padding:13px 16px;background:var(--bg2);
+  border:1px solid var(--bg3);border-radius:6px;
+  display:flex;justify-content:space-between;align-items:center;
+  font-size:.85rem;font-weight:600;color:var(--wh);text-align:left;transition:.2s
+}
+.accordion.open .acc-header{border-color:var(--teal);color:var(--teal);border-radius:6px 6px 0 0}
+.acc-header:hover{border-color:var(--teal)}
+.acc-chevron{font-size:.7rem;color:var(--gr);transition:transform .2s}
+.accordion.open .acc-chevron{transform:rotate(180deg);color:var(--teal)}
+.acc-body{
+  display:none;padding:16px;background:#1a252f;
+  border:1px solid var(--teal);border-top:none;
+  border-radius:0 0 6px 6px;color:var(--gl);
+  font-size:.84rem;line-height:1.7
+}
+.accordion.open .acc-body{display:block}
+.acc-body h4{color:var(--wh);font-size:.85rem;font-weight:700;margin:14px 0 6px}
+.acc-body h4:first-child{margin-top:0}
+.acc-body ul{padding-left:18px;margin:6px 0 10px}
+.acc-body li{margin-bottom:5px}
+.acc-body p{margin-bottom:10px}
+.acc-body p:last-child{margin-bottom:0}
+.acc-body strong{color:var(--wh)}
+.acc-body table{width:100%;border-collapse:collapse;margin:10px 0;font-size:.8rem}
+.acc-body th{text-align:left;padding:6px 10px;color:var(--teal);border-bottom:1px solid var(--bg3);font-size:.7rem;text-transform:uppercase;font-weight:700}
+.acc-body td{padding:7px 10px;border-bottom:1px solid #2d3e50;vertical-align:top}
+.acc-body tr:last-child td{border-bottom:none}
+.threshold-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.threshold-pill{
+  padding:5px 12px;background:rgba(0,184,148,.12);
+  border:1px solid rgba(0,184,148,.3);border-radius:20px;
+  font-size:.78rem;font-weight:600;color:var(--tl)
+}
+.threshold-pill span{color:var(--wh);font-weight:700}
+
+/* ── Error ── */
+.error-msg{padding:12px 16px;background:rgba(231,76,60,.1);border:1px solid var(--red);border-radius:8px;color:var(--red);font-size:.875rem;line-height:1.5}
+
 /* ── Responsive ── */
 @media(max-width:600px){
   .main{padding:16px}
-  .section{padding:16px}
   .header-title{display:none}
-  .nav-tab{padding:12px 14px;font-size:.72rem}
+  .nav-tab{padding:12px 12px;font-size:.7rem;letter-spacing:.5px}
+  .sit-btn{font-size:.78rem;padding:8px 12px}
 }
 </style>
 </head>
@@ -212,248 +235,83 @@ input,select,textarea{font-family:var(--f)}
 </div>
 
 <div class="nav-tabs">
-  <button class="nav-tab active" onclick="switchTab('eligibility')">Eligibility Checker</button>
-  <button class="nav-tab" onclick="switchTab('qa')">Policy Q&amp;A</button>
+  <button class="nav-tab active" onclick="switchTab('eligibility', this)">Eligibility Checker</button>
+  <button class="nav-tab" onclick="switchTab('qa', this)">Policy Q&amp;A</button>
+  <button class="nav-tab" onclick="switchTab('reference', this)">ROE Reference</button>
 </div>
 
 <div class="main">
 
-  <!-- ══════════════════════════════════════════════════
+  <!-- ══════════════════════════════════════
        TAB 1: ELIGIBILITY CHECKER
-  ═══════════════════════════════════════════════════ -->
+  ═══════════════════════════════════════ -->
   <div id="tab-eligibility" class="tab-pane active">
 
-    <div id="eligibility-form">
-
-      <!-- Section 1: Situation -->
-      <div class="section">
-        <div class="section-title">Your Situation</div>
-
-        <div class="field">
-          <label>What do you need to know?</label>
-          <select id="situationType">
-            <option value="">— Select —</option>
-            <option value="Can I work this deal?">Can I work this deal?</option>
-            <option value="Do I own this account?">Do I own this account?</option>
-            <option value="Will I get commission?">Will I get commission?</option>
-            <option value="Is this a duplicate?">Is this a duplicate?</option>
-            <option value="Should I route this account?">Should I route this account?</option>
-            <option value="Other">Other</option>
-          </select>
-        </div>
-
-        <div class="field">
-          <label>Pipeline</label>
-          <select id="pipeline">
-            <option value="">— Select —</option>
-            <option value="SC Qualification">SC Qualification</option>
-            <option value="SC Sales Opportunity">SC Sales Opportunity</option>
-            <option value="SP Qualification">SP Qualification</option>
-            <option value="SP Sales Opportunity">SP Sales Opportunity</option>
-            <option value="GC Qualification">GC Qualification</option>
-            <option value="GC Sales Opportunity">GC Sales Opportunity</option>
-          </select>
-        </div>
-
-        <div class="field">
-          <label>HubSpot deal link <span style="color:var(--gr);font-weight:400">(optional — AI will pull live data)</span></label>
-          <input type="url" id="hubspotUrl" placeholder="https://app.hubspot.com/contacts/.../deal/...">
+    <!-- INPUT VIEW -->
+    <div id="elig-input">
+      <div style="margin-bottom:20px">
+        <div style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--teal);margin-bottom:12px">What do you need to know?</div>
+        <div class="sit-grid" id="sit-grid">
+          <button class="sit-btn" data-value="Can I work this deal?">Can I work this deal?</button>
+          <button class="sit-btn" data-value="Do I own this account?">Do I own this account?</button>
+          <button class="sit-btn" data-value="Will I get commission?">Will I get commission?</button>
+          <button class="sit-btn" data-value="Is this a duplicate?">Is this a duplicate?</button>
+          <button class="sit-btn" data-value="Should I route this account?">Should I route this account?</button>
+          <button class="sit-btn" data-value="Other">Other</button>
         </div>
       </div>
 
-      <!-- Section 2: Existing Deal -->
-      <div class="section">
-        <div class="section-title">Existing Deal on This Account</div>
+      <div class="field">
+        <label>HubSpot deal link <span class="req">*</span></label>
+        <input type="url" id="elig-url1" placeholder="https://app.hubspot.com/contacts/.../deal/...">
+      </div>
 
+      <div id="elig-url2-row" class="conditional">
         <div class="field">
-          <label>Is there an existing open deal on this account?</label>
-          <div class="toggle-group" data-field="existingDeal">
-            <button class="toggle-btn" data-value="yes">Yes</button>
-            <button class="toggle-btn" data-value="no">No</button>
-          </div>
-        </div>
-
-        <div id="existing-deal-details" class="conditional">
-          <div class="field">
-            <label>Who currently owns that deal?</label>
-            <input type="text" id="existingOwner" placeholder="AE name">
-          </div>
-          <div class="field">
-            <label>Date of last documented call on that deal</label>
-            <input type="date" id="lastCallDate">
-          </div>
-          <div class="field">
-            <label>Duration of that call (seconds)</label>
-            <input type="number" id="lastCallDuration" placeholder="e.g. 120" min="0">
-          </div>
-          <div class="field">
-            <label>Is there an active task on that deal?</label>
-            <div class="toggle-group" data-field="hasActiveTask">
-              <button class="toggle-btn" data-value="yes">Yes</button>
-              <button class="toggle-btn" data-value="no">No</button>
-            </div>
-          </div>
-          <div id="task-date-row" class="conditional">
-            <div class="field">
-              <label>Task due date</label>
-              <input type="date" id="taskDate">
-            </div>
-          </div>
+          <label>The other deal <span class="req">*</span> <span style="color:var(--gr);font-weight:400">— the deal you believe is a duplicate</span></label>
+          <input type="url" id="elig-url2" placeholder="https://app.hubspot.com/contacts/.../deal/...">
         </div>
       </div>
 
-      <!-- Section 3: Your Activity -->
-      <div class="section">
-        <div class="section-title">Your Activity (Last 30 Days)</div>
-
-        <div class="field">
-          <label>Have you had at least 1 meaningful call (≥25 sec) on this deal?</label>
-          <div class="toggle-group" data-field="hasMeaningfulCall">
-            <button class="toggle-btn" data-value="yes">Yes</button>
-            <button class="toggle-btn" data-value="no">No</button>
-          </div>
-        </div>
-
-        <div class="field">
-          <label>Have you had at least 1 meaningful conversation (connected call, meeting, or positive chat/email/text)?</label>
-          <div class="toggle-group" data-field="hasMeaningfulConversation">
-            <button class="toggle-btn" data-value="yes">Yes</button>
-            <button class="toggle-btn" data-value="no">No</button>
-          </div>
-        </div>
-
-        <div class="field">
-          <label>Total meaningful calls in last 30 days</label>
-          <input type="number" id="totalMeaningfulCalls" placeholder="0" min="0">
-        </div>
-
-        <div class="field">
-          <label>Were those calls spread across at least 3 separate days?</label>
-          <div class="toggle-group" data-field="callsSpread3Days">
-            <button class="toggle-btn" data-value="yes">Yes</button>
-            <button class="toggle-btn" data-value="no">No</button>
-          </div>
-        </div>
+      <div class="field">
+        <label>Additional context <span style="color:var(--gr);font-weight:400">(optional)</span></label>
+        <textarea id="elig-context" placeholder="Anything else the AI should know about this situation..."></textarea>
       </div>
 
-      <!-- Section 4: Account Status -->
-      <div class="section">
-        <div class="section-title">Account Status</div>
-
-        <div class="field">
-          <label>Is this a current paying customer?</label>
-          <div class="toggle-group" data-field="isPayingCustomer">
-            <button class="toggle-btn" data-value="yes">Yes</button>
-            <button class="toggle-btn" data-value="no">No</button>
-          </div>
-        </div>
-
-        <div class="field">
-          <label>Is this a cancelled customer?</label>
-          <div class="toggle-group" data-field="isCancelledCustomer">
-            <button class="toggle-btn" data-value="yes">Yes</button>
-            <button class="toggle-btn" data-value="no">No</button>
-          </div>
-        </div>
-
-        <div id="cancellation-date-row" class="conditional">
-          <div class="field">
-            <label>Date cancellation ticket was closed</label>
-            <input type="date" id="cancellationDate">
-          </div>
-        </div>
-
-        <div class="field">
-          <label>Is this account on the Key Account / Enterprise list?</label>
-          <div class="toggle-group" data-field="isKeyAccount">
-            <button class="toggle-btn" data-value="yes">Yes</button>
-            <button class="toggle-btn" data-value="no">No</button>
-            <button class="toggle-btn" data-value="unknown">Not sure</button>
-          </div>
-        </div>
-
-        <div class="field">
-          <label>Is this account Partnership or Events-tagged in HubSpot?</label>
-          <div class="toggle-group" data-field="isPartnershipTagged">
-            <button class="toggle-btn" data-value="yes">Yes</button>
-            <button class="toggle-btn" data-value="no">No</button>
-            <button class="toggle-btn" data-value="unknown">Not sure</button>
-          </div>
-        </div>
-
-        <div id="partnership-date-row" class="conditional">
-          <div class="field">
-            <label>Date the partnership/event tag was applied</label>
-            <input type="date" id="partnershipTagDate">
-          </div>
-        </div>
-
-        <div class="field">
-          <label>Was this deal created via a warm transfer or instant callback?</label>
-          <div class="toggle-group" data-field="isWarmTransfer">
-            <button class="toggle-btn" data-value="yes">Yes</button>
-            <button class="toggle-btn" data-value="no">No</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Section 5: Call Documentation -->
-      <div class="section">
-        <div class="section-title">Call Documentation</div>
-
-        <div class="field">
-          <label>Is the call documented in HubSpot?</label>
-          <div class="toggle-group" data-field="callLoggedInHubSpot">
-            <button class="toggle-btn" data-value="yes">Yes</button>
-            <button class="toggle-btn" data-value="no">No</button>
-          </div>
-        </div>
-
-        <div id="alt-doc-row" class="conditional">
-          <div class="field">
-            <label>Do you have alternative documentation (e.g., Zoom screenshot with number and duration)?</label>
-            <div class="toggle-group" data-field="hasAlternativeDoc">
-              <button class="toggle-btn" data-value="yes">Yes</button>
-              <button class="toggle-btn" data-value="no">No</button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Section 6: Additional Context -->
-      <div class="section">
-        <div class="section-title">Additional Context</div>
-        <div class="field">
-          <label>Describe the situation in your own words <span style="color:var(--gr);font-weight:400">(optional)</span></label>
-          <textarea id="additionalContext" placeholder="Any other details the AI should factor in..."></textarea>
-        </div>
-      </div>
-
-      <button class="btn-submit" id="btn-submit" onclick="submitEligibility()">Analyze My Situation</button>
+      <button class="btn-submit" id="btn-elig-submit" onclick="submitEligibility()">Analyze My Situation</button>
     </div>
 
-    <!-- Loading -->
-    <div class="loading" id="eligibility-loading">
-      <div class="spinner"></div>
-      <div class="loading-text">Reviewing ROE rules...</div>
-    </div>
-
-    <!-- Result -->
-    <div class="result" id="eligibility-result">
-      <div class="verdict-badge" id="verdict-badge">
-        <span class="verdict-icon" id="verdict-icon"></span>
-        <span id="verdict-label"></span>
+    <!-- CONVERSATION VIEW (shown after submit) -->
+    <div id="elig-chat" style="display:none">
+      <div class="verdict-card" id="verdict-card">
+        <div class="verdict-header">
+          <span class="verdict-icon" id="verdict-icon"></span>
+          <span class="verdict-label" id="verdict-label"></span>
+        </div>
+        <div class="verdict-body" id="verdict-body"></div>
       </div>
-      <div class="result-body" id="result-body"></div>
-      <button class="btn-reset" onclick="resetEligibility()">← New Analysis</button>
+
+      <div class="chat-messages" id="elig-messages">
+        <div class="typing-indicator" id="elig-typing">
+          <div class="typing-dot"></div>
+          <div class="typing-dot"></div>
+          <div class="typing-dot"></div>
+        </div>
+      </div>
+
+      <div id="elig-followup-row" class="chat-input-row" style="margin-bottom:10px">
+        <textarea class="chat-input" id="elig-followup" placeholder="Add more details or respond to a follow-up question..."
+          onkeydown="handleEligKeydown(event)" oninput="autoResize(this)"></textarea>
+        <button class="btn-send" id="btn-elig-send" onclick="sendEligFollowup()">Send</button>
+      </div>
+      <button class="btn-ghost" onclick="resetEligibility()">← New Analysis</button>
     </div>
   </div>
 
-  <!-- ══════════════════════════════════════════════════
+  <!-- ══════════════════════════════════════
        TAB 2: POLICY Q&A
-  ═══════════════════════════════════════════════════ -->
+  ═══════════════════════════════════════ -->
   <div id="tab-qa" class="tab-pane">
-
     <div class="sample-qs">
       <button class="sample-q" onclick="fillQuestion('Can I work a deal if the last call was 16 days ago?')">Last call 16 days ago?</button>
       <button class="sample-q" onclick="fillQuestion('What counts as a meaningful conversation?')">Meaningful conversation?</button>
@@ -463,12 +321,12 @@ input,select,textarea{font-family:var(--f)}
       <button class="sample-q" onclick="fillQuestion('What is the Key Account ARR threshold?')">Key Account threshold?</button>
     </div>
 
-    <div class="chat-messages" id="chat-messages">
-      <div class="chat-empty" id="chat-empty">
+    <div class="chat-messages" id="qa-messages">
+      <div class="chat-empty" id="qa-empty">
         <div>Ask any question about the Rules of Engagement</div>
         <div class="hint">Responses cite specific policy sections</div>
       </div>
-      <div class="typing-indicator" id="typing-indicator">
+      <div class="typing-indicator" id="qa-typing">
         <div class="typing-dot"></div>
         <div class="typing-dot"></div>
         <div class="typing-dot"></div>
@@ -478,17 +336,222 @@ input,select,textarea{font-family:var(--f)}
     <div class="chat-input-row">
       <textarea class="chat-input" id="qa-input" placeholder="Ask about ROE policy..." rows="1"
         onkeydown="handleQAKeydown(event)" oninput="autoResize(this)"></textarea>
-      <button class="btn-send" id="btn-send" onclick="sendQuestion()">Send</button>
+      <button class="btn-send" id="btn-qa-send" onclick="sendQuestion()">Send</button>
     </div>
-    <button class="btn-clear" onclick="clearChat()">Clear conversation</button>
+    <button class="btn-ghost btn-danger" style="margin-top:10px" onclick="clearChat()">Clear conversation</button>
   </div>
 
-</div>
+  <!-- ══════════════════════════════════════
+       TAB 3: ROE REFERENCE
+  ═══════════════════════════════════════ -->
+  <div id="tab-reference" class="tab-pane">
 
-<!-- ══════════════════════════════════════════════════
-     FIREBASE CONFIG — Replace with your project config
-     Get this from: Firebase Console → Project Settings → Your apps → Web
-═══════════════════════════════════════════════════ -->
+    <div class="roe-intro">
+      <strong>Rules of Engagement v3.1.26</strong> — Effective March 1, 2026. Applies org-wide: SC, SP, GC, and Upsell teams. For rulings and policy questions, use the Eligibility Checker or Policy Q&A tabs.
+    </div>
+
+    <!-- Key Thresholds -->
+    <div class="accordion open">
+      <button class="acc-header" onclick="toggleAccordion(this)">
+        Key Thresholds <span class="acc-chevron">▼</span>
+      </button>
+      <div class="acc-body">
+        <div class="threshold-row">
+          <div class="threshold-pill">Commission call window: <span>30 days</span></div>
+          <div class="threshold-pill">Meaningful call minimum: <span>25 seconds</span></div>
+          <div class="threshold-pill">Duplicate check (call): <span>14 days</span></div>
+          <div class="threshold-pill">Duplicate check (active task): <span>30 days</span></div>
+          <div class="threshold-pill">Cancelled → Upsell: <span>0–91 days</span></div>
+          <div class="threshold-pill">Cancelled → New Business eligible: <span>91+ days</span></div>
+          <div class="threshold-pill">Key Account ARR threshold: <span>&gt;$5,000</span></div>
+          <div class="threshold-pill">Clawback window: <span>90 days</span></div>
+          <div class="threshold-pill">Upsell touch window: <span>1 business day</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Commission Eligibility -->
+    <div class="accordion">
+      <button class="acc-header" onclick="toggleAccordion(this)">
+        Commission Eligibility (New Business) <span class="acc-chevron">▼</span>
+      </button>
+      <div class="acc-body">
+        <p>No commission paid on Closed Won deals unless the deal is assigned to a currently employed AE who meets <strong>one</strong> of:</p>
+        <ul>
+          <li><strong>Option 1:</strong> At least <strong>3 meaningful calls over at least 3 separate days</strong> within the last 30 days</li>
+          <li><strong>Option 2:</strong> At least <strong>1 meaningful call</strong> within the last 30 days AND <strong>at least 1 meaningful conversation</strong> (connected call, meeting, or positive chat/email/text exchange)</li>
+        </ul>
+        <p><strong>Meaningful call</strong> = documented call with a minimum 25-second duration.</p>
+        <p>Email activity alone does not count toward ownership. Automated sequence emails are excluded entirely.</p>
+      </div>
+    </div>
+
+    <!-- Duplicate Check Rules -->
+    <div class="accordion">
+      <button class="acc-header" onclick="toggleAccordion(this)">
+        Duplicate Check Rules <span class="acc-chevron">▼</span>
+      </button>
+      <div class="acc-body">
+        <p>Check fields: contact name, company name, phone number, all non-public email domains.</p>
+        <p><strong>Exceptions — no duplicate check required:</strong> Warm transfers, instant callbacks, EverPro deals.</p>
+        <p><strong>Manually created deals:</strong> Full check required before creation.<br>
+        <strong>System-created deals:</strong> Check required "where reasonably feasible."</p>
+        <table>
+          <tr><th>Scenario</th><th>Action</th></tr>
+          <tr><td>Duplicate found — call within 14 days OR active task within 30 days</td><td>Notify owner; close-lost your deal as Duplicate</td></tr>
+          <tr><td>Duplicate found — no call in 14 days AND no active task in 30 days</td><td>Your deal is eligible to work; notify original owner to close-lost</td></tr>
+          <tr><td>Duplicate found at or after point of sale</td><td>Ownership = first to close</td></tr>
+          <tr><td>Duplicate found prior to point of sale</td><td>Ownership = party who most meaningfully progressed the deal</td></tr>
+        </table>
+      </div>
+    </div>
+
+    <!-- Deal Pipeline Rules -->
+    <div class="accordion">
+      <button class="acc-header" onclick="toggleAccordion(this)">
+        Deal Pipeline Rules <span class="acc-chevron">▼</span>
+      </button>
+      <div class="acc-body">
+        <table>
+          <tr><th>Rule</th><th>Detail</th></tr>
+          <tr><td><strong>8-hour touch window</strong></td><td>If not touched within 8 business hours of assignment, may be reassigned at management discretion</td></tr>
+          <tr><td><strong>14-day qualification pipeline</strong></td><td>Eligible to be moved at management discretion if uncalled for 14 days</td></tr>
+          <tr><td><strong>30-day auto-close-lost</strong></td><td>All deals auto-moved to Closed Lost if uncalled by owner for 30 days — <strong>this automation is live</strong></td></tr>
+          <tr><td><strong>2,000 deal cap</strong></td><td>Pipelines should contain no more than 2,000 open deals</td></tr>
+          <tr><td><strong>No re-opening closed-lost</strong></td><td>Deals cannot be moved out of Closed Lost — create a new deal</td></tr>
+          <tr><td><strong>Upsell routing</strong></td><td>All current customers and cancelled customers within 90 days of cancellation → Upsell team. Non-commissionable for AEs.</td></tr>
+        </table>
+      </div>
+    </div>
+
+    <!-- Cancelled Customer Routing -->
+    <div class="accordion">
+      <button class="acc-header" onclick="toggleAccordion(this)">
+        Cancelled Customer Routing <span class="acc-chevron">▼</span>
+      </button>
+      <div class="acc-body">
+        <p>Days measured from <strong>cancellation ticket closed date</strong>. Cancellation officially recognized 30 days after renewal date.</p>
+        <table>
+          <tr><th>Days Since Cancellation Ticket Closed</th><th>Routing</th></tr>
+          <tr><td>0–14 days</td><td>Save team</td></tr>
+          <tr><td>15–91 days</td><td>Upsell team</td></tr>
+          <tr><td>91+ days</td><td>New Business — AEs eligible</td></tr>
+        </table>
+        <p>If cancelled customer contacts Save team or prior CSM directly → Save team retains ownership regardless of timing.</p>
+      </div>
+    </div>
+
+    <!-- Partnership & Events -->
+    <div class="accordion">
+      <button class="acc-header" onclick="toggleAccordion(this)">
+        Partnership &amp; Events <span class="acc-chevron">▼</span>
+      </button>
+      <div class="acc-body">
+        <p>Contacts tagged in HubSpot. Receiving AE must transfer inbound calls/chats from tagged contacts — failure = deal marked as House Sale.</p>
+        <table>
+          <tr><th>Scenario</th><th>Outcome</th></tr>
+          <tr><td>Deal in qualification pipeline, no call in last 14 days at time of tag</td><td>Reassigned to partnership team, no compensation</td></tr>
+          <tr><td>Deal in opportunity pipeline with call in last 30 days at time of tag</td><td>AE notified; 30 days from notice to close for full credit; after 30 days → 50/50 split</td></tr>
+          <tr><td>AE participates in non-partnership event</td><td>30 days post-event for full credit; after 30 days → 50/50 split eligible</td></tr>
+        </table>
+        <p>50/50 split executed via <code>50_split_ae</code> deal property, stamped at reassignment.</p>
+      </div>
+    </div>
+
+    <!-- Key Accounts / Enterprise -->
+    <div class="accordion">
+      <button class="acc-header" onclick="toggleAccordion(this)">
+        Key Accounts / Enterprise / Named Accounts <span class="acc-chevron">▼</span>
+      </button>
+      <div class="acc-body">
+        <p><strong>Key Account threshold:</strong> ARR &gt; $5,000. List maintained in HubSpot segment: <em>OPS_Enterprise Target Account List_Master (used in automation)_3.12.25jbh</em></p>
+        <table>
+          <tr><th>Rule</th><th>Action</th></tr>
+          <tr><td>New deal/lead on a named account</td><td>Must be sent to appropriate account owner</td></tr>
+          <tr><td>New business seeking API, Nationwide, or multi-franchise pricing</td><td>Management approval required</td></tr>
+          <tr><td>Current customer seeking API, Nationwide, or multi-franchise</td><td>Send to manager for reassignment</td></tr>
+          <tr><td>Failure to route</td><td>Deal marked as House Sale</td></tr>
+        </table>
+      </div>
+    </div>
+
+    <!-- Live Chat Policy -->
+    <div class="accordion">
+      <button class="acc-header" onclick="toggleAccordion(this)">
+        Live Chat Policy <span class="acc-chevron">▼</span>
+      </button>
+      <div class="acc-body">
+        <h4>Business Hours (M–F 8a–8p ET)</h4>
+        <ul>
+          <li>Coverage scheduled via "AE Live Chat Calendar"</li>
+          <li>Chats dormant with bots for 10 minutes → eligible for self-assignment by any AE scheduled that day</li>
+          <li>If account is owned by another AE with a meaningful call in last 30 days → alert and reassign to correct owner</li>
+        </ul>
+        <h4>After Hours</h4>
+        <p>First-come-first-serve, subject to duplicate check. Acceptable calling hours: 8a–8p local time.</p>
+        <table>
+          <tr><th>Eligible</th><th>Not Eligible</th></tr>
+          <tr><td>No open deal exists</td><td>Open deal in stage 2+ with meaningful call in last 30 days</td></tr>
+          <tr><td>Open deal in stage 2+ without meaningful call in last 30 days</td><td>Stage 1 deal exists and outside acceptable calling hours</td></tr>
+          <tr><td>Uncalled open deal in stage 1 within acceptable calling hours</td><td></td></tr>
+        </table>
+      </div>
+    </div>
+
+    <!-- Clawback -->
+    <div class="accordion">
+      <button class="acc-header" onclick="toggleAccordion(this)">
+        Clawback Policy <span class="acc-chevron">▼</span>
+      </button>
+      <div class="acc-body">
+        <ul>
+          <li>90-day window from original sale date</li>
+          <li>Refund or chargeback accepted within 90 days → commission clawed back at same percentage as refund</li>
+          <li>Platform switches within 90 days → additional revenue is non-commissionable</li>
+          <li>Split payment terms (50/50): if full year 1 cost not collected within 30 days of second payment due date → previously paid commission clawed back</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Upsells -->
+    <div class="accordion">
+      <button class="acc-header" onclick="toggleAccordion(this)">
+        Existing Business &amp; Upsells <span class="acc-chevron">▼</span>
+      </button>
+      <div class="acc-body">
+        <h4>CSM/Onboarding-Created Opportunities</h4>
+        <ul>
+          <li>Must be worked within 1 business day (deal created + pricing email sent same day)</li>
+          <li>Sold after 1 business day → does not qualify for full commission</li>
+          <li>Sent to Upsell on day 2 → CSM receives $25</li>
+          <li>Demo requests → route to Upsell team</li>
+        </ul>
+        <h4>Support-Generated Leads</h4>
+        <p>Any support interaction with upsell potential → Upsell team directly.</p>
+        <h4>New Business Created Upsell Opportunities</h4>
+        <p>Ownership = Upsell team.</p>
+      </div>
+    </div>
+
+    <!-- Governing Principles -->
+    <div class="accordion">
+      <button class="acc-header" onclick="toggleAccordion(this)">
+        Governing Principles &amp; Disputes <span class="acc-chevron">▼</span>
+      </button>
+      <div class="acc-body">
+        <ul>
+          <li>The ROE provides a fair, consistent, and scalable framework for account ownership and revenue credit</li>
+          <li>Company reserves the right to modify at any time without notice</li>
+          <li>Ownership disputes: Leadership has sole and exclusive right to investigate and resolve. All decisions are final and non-appealable</li>
+          <li>Leadership may split commission where appropriate based on demonstrated contributions</li>
+          <li>Guiding spirit: support closing business in the most direct and efficient manner — rules are not intended to incentivize ownership preservation for its own sake</li>
+        </ul>
+      </div>
+    </div>
+
+  </div><!-- /tab-reference -->
+</div><!-- /main -->
+
 <script>
 const firebaseConfig = {
   apiKey: "AIzaSyCVfTp-GDRHtdp0Tb6VGiTws9I0OB9RM_k",
@@ -504,165 +567,206 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
 // ── State ────────────────────────────────────────────────────────────────────
-const formState = {};
+let selectedSituation = null;
+let eligHistory = [];
+let eligWaiting = false;
+
 let qaHistory = [];
 let qaWaiting = false;
 
 // ── Tab switching ─────────────────────────────────────────────────────────────
-function switchTab(tab) {
+function switchTab(tab, btn) {
   document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
   document.getElementById('tab-' + tab).classList.add('active');
-  event.target.classList.add('active');
+  if (btn) btn.classList.add('active');
 }
 
-// ── Toggle buttons ────────────────────────────────────────────────────────────
-document.querySelectorAll('.toggle-group').forEach(group => {
-  group.addEventListener('click', e => {
-    const btn = e.target.closest('.toggle-btn');
-    if (!btn) return;
-    const field = group.dataset.field;
-    const value = btn.dataset.value;
-    formState[field] = value;
-    group.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
+// ── Situation selector ────────────────────────────────────────────────────────
+document.querySelectorAll('.sit-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.sit-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
-    updateConditionalFields();
+    selectedSituation = btn.dataset.value;
+    // Show second URL field only for duplicate
+    document.getElementById('elig-url2-row').classList.toggle('visible', selectedSituation === 'Is this a duplicate?');
   });
 });
 
-function updateConditionalFields() {
-  setConditional('existing-deal-details', formState.existingDeal === 'yes');
-  setConditional('task-date-row', formState.existingDeal === 'yes' && formState.hasActiveTask === 'yes');
-  setConditional('cancellation-date-row', formState.isCancelledCustomer === 'yes');
-  setConditional('partnership-date-row', formState.isPartnershipTagged === 'yes');
-  setConditional('alt-doc-row', formState.callLoggedInHubSpot === 'no');
-}
-
-function setConditional(id, show) {
-  const el = document.getElementById(id);
-  if (el) el.classList.toggle('visible', show);
-}
-
 // ── Eligibility submit ────────────────────────────────────────────────────────
 function submitEligibility() {
-  const situationType = document.getElementById('situationType').value;
-  const pipeline = document.getElementById('pipeline').value;
-
-  if (!situationType || !pipeline) {
-    alert('Please select a situation type and pipeline before submitting.');
+  if (!selectedSituation) {
+    alert('Please select what you need to know.');
+    return;
+  }
+  const url1 = document.getElementById('elig-url1').value.trim();
+  if (!url1) {
+    alert('Please enter the HubSpot deal link.');
+    document.getElementById('elig-url1').focus();
+    return;
+  }
+  const isDuplicate = selectedSituation === 'Is this a duplicate?';
+  const url2 = document.getElementById('elig-url2').value.trim();
+  if (isDuplicate && !url2) {
+    alert('Please enter the second deal link for duplicate analysis.');
+    document.getElementById('elig-url2').focus();
     return;
   }
 
+  const context = document.getElementById('elig-context').value.trim();
+
+  // Show conversation view
+  document.getElementById('elig-input').style.display = 'none';
+  document.getElementById('elig-chat').style.display = 'block';
+
+  // Show initial user message
+  const userSummary = `${selectedSituation}\nDeal: ${url1}${isDuplicate ? '\nOther deal: ' + url2 : ''}${context ? '\n' + context : ''}`;
+  appendEligMessage('user', userSummary);
+
+  showEligTyping();
+
+  const requestId = generateId();
   const payload = {
     type: 'eligibility',
     status: 'pending',
+    situationType: selectedSituation,
+    hubspotUrl: url1,
+    hubspotUrl2: isDuplicate ? url2 : null,
+    additionalContext: context || null,
+    conversationHistory: [],
     createdAt: Date.now(),
-    situationType,
-    pipeline,
-    hubspotUrl: document.getElementById('hubspotUrl').value.trim() || null,
-    existingDeal: formState.existingDeal || null,
-    existingOwner: document.getElementById('existingOwner').value.trim() || null,
-    lastCallDate: document.getElementById('lastCallDate').value || null,
-    lastCallDuration: document.getElementById('lastCallDuration').value
-      ? Number(document.getElementById('lastCallDuration').value) : null,
-    hasActiveTask: formState.hasActiveTask || null,
-    taskDate: document.getElementById('taskDate').value || null,
-    hasMeaningfulCall: formState.hasMeaningfulCall || null,
-    hasMeaningfulConversation: formState.hasMeaningfulConversation || null,
-    totalMeaningfulCalls: document.getElementById('totalMeaningfulCalls').value !== ''
-      ? Number(document.getElementById('totalMeaningfulCalls').value) : null,
-    callsSpread3Days: formState.callsSpread3Days || null,
-    isPayingCustomer: formState.isPayingCustomer || null,
-    isCancelledCustomer: formState.isCancelledCustomer || null,
-    cancellationDate: document.getElementById('cancellationDate').value || null,
-    isKeyAccount: formState.isKeyAccount || null,
-    isPartnershipTagged: formState.isPartnershipTagged || null,
-    partnershipTagDate: document.getElementById('partnershipTagDate').value || null,
-    isWarmTransfer: formState.isWarmTransfer || null,
-    callLoggedInHubSpot: formState.callLoggedInHubSpot || null,
-    hasAlternativeDoc: formState.hasAlternativeDoc || null,
-    additionalContext: document.getElementById('additionalContext').value.trim() || null,
   };
 
-  const requestId = generateId();
-
-  document.getElementById('eligibility-form').style.display = 'none';
-  showEligibilityLoading();
+  eligHistory = [{ role: 'user', content: buildEligUserMessage(payload) }];
 
   db.ref('/roe-tool/requests/' + requestId).set(payload);
-  listenForEligibilityResult(requestId);
+  listenForEligResult(requestId);
 }
 
-function listenForEligibilityResult(requestId) {
+function buildEligUserMessage(payload) {
+  const lines = [`Situation: ${payload.situationType}`, `Deal: ${payload.hubspotUrl}`];
+  if (payload.hubspotUrl2) lines.push(`Other deal: ${payload.hubspotUrl2}`);
+  if (payload.additionalContext) lines.push(payload.additionalContext);
+  return lines.join('\n');
+}
+
+function sendEligFollowup() {
+  const input = document.getElementById('elig-followup');
+  const text = input.value.trim();
+  if (!text || eligWaiting) return;
+
+  eligWaiting = true;
+  document.getElementById('btn-elig-send').disabled = true;
+
+  appendEligMessage('user', text);
+  eligHistory.push({ role: 'user', content: text });
+
+  showEligTyping();
+  input.value = '';
+  autoResize(input);
+
+  const requestId = generateId();
+  db.ref('/roe-tool/requests/' + requestId).set({
+    type: 'eligibility',
+    status: 'pending',
+    question: text,
+    conversationHistory: [...eligHistory.slice(0, -1)],
+    createdAt: Date.now(),
+  });
+
+  listenForEligResult(requestId);
+}
+
+function listenForEligResult(requestId) {
   const ref = db.ref('/roe-tool/results/' + requestId);
   const listener = ref.on('value', snapshot => {
     const result = snapshot.val();
     if (!result) return;
     if (result.status === 'complete' || result.status === 'error') {
       ref.off('value', listener);
-      hideEligibilityLoading();
-      displayEligibilityResult(result);
+      hideEligTyping();
+      eligWaiting = false;
+      document.getElementById('btn-elig-send').disabled = false;
+
+      const text = result.text || 'An error occurred. Please try again.';
+      eligHistory.push({ role: 'assistant', content: text });
+
+      const verdict = parseVerdict(text);
+      if (verdict) {
+        showVerdictCard(verdict, text);
+      }
+
+      // Show response in chat (without the VERDICT: line if it's a final verdict)
+      const displayText = verdict ? text.replace(/^VERDICT:\s*\S+\s*\n?/, '').trim() : text;
+      if (displayText) appendEligMessage('assistant', displayText);
+
+      // Hide followup input if we have a verdict
+      if (verdict) {
+        document.getElementById('elig-followup-row').style.display = 'none';
+      }
     }
   });
 }
 
-function displayEligibilityResult(result) {
-  const badge = document.getElementById('verdict-badge');
+function showVerdictCard(verdict, fullText) {
+  const card = document.getElementById('verdict-card');
   const icon = document.getElementById('verdict-icon');
   const label = document.getElementById('verdict-label');
-  const body = document.getElementById('result-body');
+  const body = document.getElementById('verdict-body');
 
-  if (result.status === 'error') {
-    document.getElementById('eligibility-result').classList.add('visible');
-    badge.style.display = 'none';
-    body.innerHTML = `<div class="error-msg">${result.text}</div>`;
-    showResult('eligibility');
-    return;
-  }
+  card.className = 'verdict-card visible ' + verdict;
 
-  const text = result.text || '';
-  const verdict = parseVerdict(text);
-  const bodyText = text.replace(/^VERDICT:\s*\S+\s*\n?/, '').trim();
+  if (verdict === 'eligible') { icon.textContent = '✅'; label.textContent = 'Eligible'; }
+  else if (verdict === 'not-eligible') { icon.textContent = '❌'; label.textContent = 'Not Eligible'; }
+  else { icon.textContent = '⚠️'; label.textContent = 'Conditional'; }
 
-  badge.style.display = 'flex';
-  badge.className = 'verdict-badge ' + (verdict || 'conditional');
-
-  if (verdict === 'eligible') {
-    icon.textContent = '✅';
-    label.textContent = 'Eligible';
-  } else if (verdict === 'not-eligible') {
-    icon.textContent = '❌';
-    label.textContent = 'Not Eligible';
-  } else {
-    icon.textContent = '⚠️';
-    label.textContent = 'Conditional';
-  }
-
+  const bodyText = fullText.replace(/^VERDICT:\s*\S+\s*\n?/, '').trim();
   body.innerHTML = renderMarkdown(bodyText);
-  showResult('eligibility');
 }
 
-function parseVerdict(text) {
-  if (/^VERDICT:\s*ELIGIBLE\b/i.test(text)) return 'eligible';
-  if (/^VERDICT:\s*NOT_ELIGIBLE\b/i.test(text)) return 'not-eligible';
-  if (/^VERDICT:\s*CONDITIONAL\b/i.test(text)) return 'conditional';
-  return null;
+function appendEligMessage(role, text) {
+  const container = document.getElementById('elig-messages');
+  const typing = document.getElementById('elig-typing');
+  const div = document.createElement('div');
+  div.className = 'msg msg-' + role;
+  if (role === 'assistant') {
+    div.innerHTML = renderMarkdown(text);
+  } else {
+    div.textContent = text;
+  }
+  container.insertBefore(div, typing);
+  scrollContainer(container);
 }
 
-function showEligibilityLoading() {
-  document.getElementById('eligibility-loading').classList.add('visible');
+function showEligTyping() {
+  eligWaiting = true;
+  document.getElementById('btn-elig-send').disabled = true;
+  document.getElementById('elig-typing').classList.add('visible');
+  scrollContainer(document.getElementById('elig-messages'));
 }
-function hideEligibilityLoading() {
-  document.getElementById('eligibility-loading').classList.remove('visible');
-}
-function showResult(tab) {
-  document.getElementById(tab + '-result').classList.add('visible');
+function hideEligTyping() {
+  document.getElementById('elig-typing').classList.remove('visible');
 }
 
 function resetEligibility() {
-  document.getElementById('eligibility-form').style.display = 'block';
-  document.getElementById('eligibility-result').classList.remove('visible');
-  document.getElementById('eligibility-loading').classList.remove('visible');
+  selectedSituation = null;
+  eligHistory = [];
+  eligWaiting = false;
+  document.querySelectorAll('.sit-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('elig-url1').value = '';
+  document.getElementById('elig-url2').value = '';
+  document.getElementById('elig-context').value = '';
+  document.getElementById('elig-url2-row').classList.remove('visible');
+  document.getElementById('elig-input').style.display = 'block';
+  document.getElementById('elig-chat').style.display = 'none';
+  document.getElementById('verdict-card').className = 'verdict-card';
+  document.getElementById('elig-followup-row').style.display = 'flex';
+  document.getElementById('btn-elig-send').disabled = false;
+  Array.from(document.getElementById('elig-messages').querySelectorAll('.msg')).forEach(m => m.remove());
+}
+
+function handleEligKeydown(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendEligFollowup(); }
 }
 
 // ── Q&A ───────────────────────────────────────────────────────────────────────
@@ -672,84 +776,60 @@ function sendQuestion() {
   if (!question || qaWaiting) return;
 
   qaWaiting = true;
-  document.getElementById('btn-send').disabled = true;
+  document.getElementById('btn-qa-send').disabled = true;
+  document.getElementById('qa-empty').style.display = 'none';
 
-  document.getElementById('chat-empty').style.display = 'none';
-  appendUserMessage(question);
-
-  const requestId = generateId();
-  const payload = {
-    type: 'qa',
-    status: 'pending',
-    question,
-    conversationHistory: [...qaHistory],
-    createdAt: Date.now(),
-  };
-
+  appendQAMessage('user', question);
   qaHistory.push({ role: 'user', content: question });
+
   input.value = '';
   autoResize(input);
 
-  showTypingIndicator();
-  db.ref('/roe-tool/requests/' + requestId).set(payload);
-  listenForQAResult(requestId);
-}
+  const requestId = generateId();
+  db.ref('/roe-tool/requests/' + requestId).set({
+    type: 'qa',
+    status: 'pending',
+    question,
+    conversationHistory: [...qaHistory.slice(0, -1)],
+    createdAt: Date.now(),
+  });
 
-function listenForQAResult(requestId) {
+  document.getElementById('qa-typing').classList.add('visible');
+  scrollContainer(document.getElementById('qa-messages'));
+
   const ref = db.ref('/roe-tool/results/' + requestId);
   const listener = ref.on('value', snapshot => {
     const result = snapshot.val();
     if (!result) return;
     if (result.status === 'complete' || result.status === 'error') {
       ref.off('value', listener);
-      hideTypingIndicator();
+      document.getElementById('qa-typing').classList.remove('visible');
       const text = result.text || 'Sorry, an error occurred. Please try again.';
-      appendAssistantMessage(text);
+      appendQAMessage('assistant', text);
       qaHistory.push({ role: 'assistant', content: text });
       qaWaiting = false;
-      document.getElementById('btn-send').disabled = false;
+      document.getElementById('btn-qa-send').disabled = false;
     }
   });
 }
 
-function appendUserMessage(text) {
-  const container = document.getElementById('chat-messages');
+function appendQAMessage(role, text) {
+  const container = document.getElementById('qa-messages');
+  const typing = document.getElementById('qa-typing');
   const div = document.createElement('div');
-  div.className = 'msg msg-user';
-  div.textContent = text;
-  container.insertBefore(div, document.getElementById('typing-indicator'));
-  scrollChat();
-}
-
-function appendAssistantMessage(text) {
-  const container = document.getElementById('chat-messages');
-  const div = document.createElement('div');
-  div.className = 'msg msg-assistant';
-  div.innerHTML = renderMarkdown(text);
-  container.insertBefore(div, document.getElementById('typing-indicator'));
-  scrollChat();
-}
-
-function showTypingIndicator() {
-  document.getElementById('typing-indicator').classList.add('visible');
-  scrollChat();
-}
-function hideTypingIndicator() {
-  document.getElementById('typing-indicator').classList.remove('visible');
-}
-function scrollChat() {
-  const c = document.getElementById('chat-messages');
-  c.scrollTop = c.scrollHeight;
+  div.className = 'msg msg-' + role;
+  if (role === 'assistant') div.innerHTML = renderMarkdown(text);
+  else div.textContent = text;
+  container.insertBefore(div, typing);
+  scrollContainer(container);
 }
 
 function clearChat() {
-  qaHistory = [];
-  qaWaiting = false;
-  document.getElementById('btn-send').disabled = false;
-  const container = document.getElementById('chat-messages');
-  Array.from(container.querySelectorAll('.msg')).forEach(m => m.remove());
-  document.getElementById('chat-empty').style.display = 'flex';
-  hideTypingIndicator();
+  qaHistory = []; qaWaiting = false;
+  document.getElementById('btn-qa-send').disabled = false;
+  document.getElementById('qa-typing').classList.remove('visible');
+  Array.from(document.getElementById('qa-messages').querySelectorAll('.msg')).forEach(m => m.remove());
+  document.getElementById('qa-empty').style.display = 'flex';
 }
 
 function fillQuestion(q) {
@@ -759,25 +839,38 @@ function fillQuestion(q) {
 }
 
 function handleQAKeydown(e) {
-  if (e.key === 'Enter' && !e.shiftKey) {
-    e.preventDefault();
-    sendQuestion();
-  }
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendQuestion(); }
 }
 
-function autoResize(el) {
-  el.style.height = 'auto';
-  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+// ── Accordion ─────────────────────────────────────────────────────────────────
+function toggleAccordion(btn) {
+  btn.closest('.accordion').classList.toggle('open');
 }
 
 // ── Utilities ─────────────────────────────────────────────────────────────────
-function generateId() {
-  return Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 9);
+function parseVerdict(text) {
+  if (/^VERDICT:\s*ELIGIBLE\b/i.test(text)) return 'eligible';
+  if (/^VERDICT:\s*NOT_ELIGIBLE\b/i.test(text)) return 'not-eligible';
+  if (/^VERDICT:\s*CONDITIONAL\b/i.test(text)) return 'conditional';
+  return null;
 }
 
 function renderMarkdown(text) {
   marked.setOptions({ breaks: true, gfm: true });
   return marked.parse(text);
+}
+
+function scrollContainer(el) {
+  el.scrollTop = el.scrollHeight;
+}
+
+function generateId() {
+  return Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 9);
+}
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
 }
 </script>
 </body>
