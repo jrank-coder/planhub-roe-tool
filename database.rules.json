@@ -1,0 +1,8 @@
+{
+  "rules": {
+    "roe-tool": {
+      ".read": true,
+      ".write": true
+    }
+  }
+}

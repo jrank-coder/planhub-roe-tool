@@ -1,0 +1,17 @@
+{
+  "functions": [
+    {
+      "source": "functions",
+      "codebase": "default",
+      "ignore": [
+        "node_modules",
+        ".git",
+        "*.md",
+        "*.test.js"
+      ]
+    }
+  ],
+  "database": {
+    "rules": "database.rules.json"
+  }
+}

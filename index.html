@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PlanHub ROE Assistant</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#24313e;--bg2:#2d3e50;--bg3:#35495e;
+  --teal:#00b894;--tl:#7ad9c5;
+  --wh:#fff;--gl:#b0c4cc;--gr:#7f8c8d;
+  --green:#2ecc71;--yellow:#f1c40f;--red:#e74c3c;
+  --f:'Inter',system-ui,sans-serif
+}
+html{font-size:16px}
+body{font-family:var(--f);background:var(--bg);color:var(--wh);min-height:100vh}
+button{cursor:pointer;font-family:var(--f)}
+input,select,textarea{font-family:var(--f)}
+
+/* ── Header ── */
+.header{background:linear-gradient(135deg,#1a252f,var(--bg));border-bottom:2px solid var(--teal);padding:14px 24px;display:flex;align-items:center;gap:16px}
+.header-logo{font-size:1.3rem;font-weight:900}.header-logo .p{color:var(--teal)}.header-logo .h{color:var(--wh)}
+.header-title{font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--tl);border-left:2px solid var(--teal);padding-left:14px}
+
+/* ── Tabs ── */
+.nav-tabs{display:flex;background:#1a252f;border-bottom:1px solid var(--bg3);padding:0 24px}
+.nav-tab{padding:13px 22px;font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--gl);background:none;border:none;border-bottom:3px solid transparent;transition:.2s;white-space:nowrap}
+.nav-tab:hover{color:var(--wh)}
+.nav-tab.active{color:var(--teal);border-bottom-color:var(--teal)}
+
+/* ── Layout ── */
+.main{padding:24px;max-width:760px;margin:0 auto}
+.tab-pane{display:none}.tab-pane.active{display:block}
+
+/* ── Cards / Sections ── */
+.section{background:var(--bg2);border:1px solid rgba(0,184,148,.2);border-radius:8px;padding:20px;margin-bottom:16px}
+.section-title{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--teal);margin-bottom:16px}
+
+/* ── Form fields ── */
+.field{margin-bottom:16px}
+.field:last-child{margin-bottom:0}
+.field label{display:block;font-size:.8rem;font-weight:600;color:var(--gl);margin-bottom:6px}
+.field input,.field select,.field textarea{
+  width:100%;padding:9px 12px;background:#1a252f;
+  border:1px solid var(--bg3);border-radius:6px;
+  color:var(--wh);font-size:.875rem;transition:.2s
+}
+.field input:focus,.field select,.field textarea:focus{outline:none;border-color:var(--teal)}
+.field select option{background:#1a252f}
+.field textarea{resize:vertical;min-height:80px;line-height:1.5}
+.field input::placeholder,.field textarea::placeholder{color:var(--gr)}
+
+/* ── Toggle buttons ── */
+.toggle-group{display:flex;gap:8px;flex-wrap:wrap}
+.toggle-btn{
+  padding:7px 18px;border-radius:20px;
+  border:1px solid var(--bg3);background:transparent;
+  color:var(--gl);font-size:.8rem;font-weight:600;transition:.2s
+}
+.toggle-btn:hover{border-color:var(--teal);color:var(--teal)}
+.toggle-btn.active{background:rgba(0,184,148,.15);border-color:var(--teal);color:var(--teal)}
+
+/* ── Conditional rows ── */
+.conditional{display:none}
+.conditional.visible{display:block}
+
+/* ── Submit button ── */
+.btn-submit{
+  width:100%;padding:13px;margin-top:8px;
+  background:linear-gradient(135deg,var(--teal),#00a884);
+  color:#1a252f;border:none;border-radius:6px;
+  font-size:.95rem;font-weight:800;text-transform:uppercase;
+  letter-spacing:1px;transition:.2s
+}
+.btn-submit:hover{opacity:.9;transform:translateY(-1px)}
+.btn-submit:disabled{opacity:.45;cursor:not-allowed;transform:none}
+
+/* ── Loading state ── */
+.loading{display:none;text-align:center;padding:40px 20px}
+.loading.visible{display:block}
+.spinner{width:36px;height:36px;border:3px solid var(--bg3);border-top-color:var(--teal);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 14px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-text{color:var(--gl);font-size:.875rem;font-weight:600}
+
+/* ── Result card ── */
+.result{display:none}
+.result.visible{display:block}
+.verdict-badge{
+  display:flex;align-items:center;gap:12px;
+  padding:14px 20px;border-radius:8px;margin-bottom:20px;
+  border:1px solid;font-size:1.1rem;font-weight:800
+}
+.verdict-badge.eligible{background:rgba(46,204,113,.12);border-color:var(--green);color:var(--green)}
+.verdict-badge.conditional{background:rgba(241,196,15,.12);border-color:var(--yellow);color:var(--yellow)}
+.verdict-badge.not-eligible{background:rgba(231,76,60,.12);border-color:var(--red);color:var(--red)}
+.verdict-icon{font-size:1.4rem}
+.result-body{color:var(--gl);line-height:1.65;font-size:.875rem}
+.result-body h2{color:var(--teal);font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;margin:18px 0 8px}
+.result-body h2:first-child{margin-top:0}
+.result-body ul{padding-left:18px;margin:0}
+.result-body li{margin-bottom:5px}
+.result-body p{margin-bottom:10px}
+.result-body p:last-child{margin-bottom:0}
+
+.btn-reset{
+  margin-top:16px;padding:9px 20px;
+  background:transparent;border:1px solid var(--bg3);
+  border-radius:6px;color:var(--gl);font-size:.8rem;
+  font-weight:600;transition:.2s
+}
+.btn-reset:hover{border-color:var(--teal);color:var(--teal)}
+
+.error-msg{
+  padding:14px 18px;background:rgba(231,76,60,.1);
+  border:1px solid var(--red);border-radius:8px;
+  color:var(--red);font-size:.875rem;line-height:1.5
+}
+
+/* ── Q&A Chat ── */
+.chat-messages{
+  min-height:300px;max-height:520px;overflow-y:auto;
+  padding:16px;background:#1a252f;border-radius:8px;
+  border:1px solid var(--bg3);margin-bottom:14px;
+  display:flex;flex-direction:column;gap:14px
+}
+.chat-empty{
+  display:flex;align-items:center;justify-content:center;
+  flex:1;text-align:center;color:var(--gr);font-size:.875rem;
+  padding:40px 20px;flex-direction:column;gap:10px
+}
+.chat-empty .hint{font-size:.78rem;color:var(--bg3)}
+.msg{max-width:88%;line-height:1.6;font-size:.875rem}
+.msg-user{
+  align-self:flex-end;background:rgba(0,184,148,.15);
+  border:1px solid rgba(0,184,148,.3);border-radius:14px 14px 3px 14px;
+  padding:10px 14px;color:var(--wh)
+}
+.msg-assistant{
+  align-self:flex-start;background:var(--bg2);
+  border:1px solid var(--bg3);border-radius:14px 14px 14px 3px;
+  padding:10px 14px;color:var(--gl)
+}
+.msg-assistant h2{color:var(--teal);font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;margin:14px 0 6px}
+.msg-assistant h2:first-child{margin-top:0}
+.msg-assistant ul{padding-left:16px;margin:4px 0 8px}
+.msg-assistant li{margin-bottom:4px}
+.msg-assistant p{margin-bottom:8px}
+.msg-assistant p:last-child{margin-bottom:0}
+.msg-assistant strong{color:var(--wh)}
+
+.typing-indicator{
+  align-self:flex-start;background:var(--bg2);
+  border:1px solid var(--bg3);border-radius:14px;
+  padding:12px 16px;display:none
+}
+.typing-indicator.visible{display:flex;align-items:center;gap:5px}
+.typing-dot{width:7px;height:7px;background:var(--gl);border-radius:50%;animation:typingBounce .9s infinite}
+.typing-dot:nth-child(2){animation-delay:.15s}
+.typing-dot:nth-child(3){animation-delay:.3s}
+@keyframes typingBounce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-6px)}}
+
+.chat-input-row{display:flex;gap:10px}
+.chat-input{
+  flex:1;padding:10px 14px;background:#1a252f;
+  border:1px solid var(--bg3);border-radius:6px;
+  color:var(--wh);font-size:.875rem;resize:none;
+  min-height:44px;max-height:120px;line-height:1.5
+}
+.chat-input:focus{outline:none;border-color:var(--teal)}
+.btn-send{
+  padding:10px 20px;background:var(--teal);color:#1a252f;
+  border:none;border-radius:6px;font-weight:700;
+  font-size:.8rem;transition:.2s;align-self:flex-end
+}
+.btn-send:hover{opacity:.85}.btn-send:disabled{opacity:.4;cursor:not-allowed}
+
+.btn-clear{
+  margin-top:10px;padding:7px 16px;background:transparent;
+  border:1px solid var(--bg3);border-radius:6px;color:var(--gr);
+  font-size:.75rem;transition:.2s
+}
+.btn-clear:hover{border-color:var(--red);color:var(--red)}
+
+/* ── Sample questions ── */
+.sample-qs{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+.sample-q{
+  padding:6px 12px;background:transparent;
+  border:1px solid var(--bg3);border-radius:14px;
+  color:var(--gl);font-size:.75rem;transition:.2s
+}
+.sample-q:hover{border-color:var(--teal);color:var(--teal);background:rgba(0,184,148,.05)}
+
+/* ── Responsive ── */
+@media(max-width:600px){
+  .main{padding:16px}
+  .section{padding:16px}
+  .header-title{display:none}
+  .nav-tab{padding:12px 14px;font-size:.72rem}
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-logo"><span class="p">Plan</span><span class="h">Hub</span></div>
+  <div class="header-title">ROE Assistant</div>
+</div>
+
+<div class="nav-tabs">
+  <button class="nav-tab active" onclick="switchTab('eligibility')">Eligibility Checker</button>
+  <button class="nav-tab" onclick="switchTab('qa')">Policy Q&amp;A</button>
+</div>
+
+<div class="main">
+
+  <!-- ══════════════════════════════════════════════════
+       TAB 1: ELIGIBILITY CHECKER
+  ═══════════════════════════════════════════════════ -->
+  <div id="tab-eligibility" class="tab-pane active">
+
+    <div id="eligibility-form">
+
+      <!-- Section 1: Situation -->
+      <div class="section">
+        <div class="section-title">Your Situation</div>
+
+        <div class="field">
+          <label>What do you need to know?</label>
+          <select id="situationType">
+            <option value="">— Select —</option>
+            <option value="Can I work this deal?">Can I work this deal?</option>
+            <option value="Do I own this account?">Do I own this account?</option>
+            <option value="Will I get commission?">Will I get commission?</option>
+            <option value="Is this a duplicate?">Is this a duplicate?</option>
+            <option value="Should I route this account?">Should I route this account?</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>Pipeline</label>
+          <select id="pipeline">
+            <option value="">— Select —</option>
+            <option value="SC Qualification">SC Qualification</option>
+            <option value="SC Sales Opportunity">SC Sales Opportunity</option>
+            <option value="SP Qualification">SP Qualification</option>
+            <option value="SP Sales Opportunity">SP Sales Opportunity</option>
+            <option value="GC Qualification">GC Qualification</option>
+            <option value="GC Sales Opportunity">GC Sales Opportunity</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>HubSpot deal link <span style="color:var(--gr);font-weight:400">(optional — AI will pull live data)</span></label>
+          <input type="url" id="hubspotUrl" placeholder="https://app.hubspot.com/contacts/.../deal/...">
+        </div>
+      </div>
+
+      <!-- Section 2: Existing Deal -->
+      <div class="section">
+        <div class="section-title">Existing Deal on This Account</div>
+
+        <div class="field">
+          <label>Is there an existing open deal on this account?</label>
+          <div class="toggle-group" data-field="existingDeal">
+            <button class="toggle-btn" data-value="yes">Yes</button>
+            <button class="toggle-btn" data-value="no">No</button>
+          </div>
+        </div>
+
+        <div id="existing-deal-details" class="conditional">
+          <div class="field">
+            <label>Who currently owns that deal?</label>
+            <input type="text" id="existingOwner" placeholder="AE name">
+          </div>
+          <div class="field">
+            <label>Date of last documented call on that deal</label>
+            <input type="date" id="lastCallDate">
+          </div>
+          <div class="field">
+            <label>Duration of that call (seconds)</label>
+            <input type="number" id="lastCallDuration" placeholder="e.g. 120" min="0">
+          </div>
+          <div class="field">
+            <label>Is there an active task on that deal?</label>
+            <div class="toggle-group" data-field="hasActiveTask">
+              <button class="toggle-btn" data-value="yes">Yes</button>
+              <button class="toggle-btn" data-value="no">No</button>
+            </div>
+          </div>
+          <div id="task-date-row" class="conditional">
+            <div class="field">
+              <label>Task due date</label>
+              <input type="date" id="taskDate">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 3: Your Activity -->
+      <div class="section">
+        <div class="section-title">Your Activity (Last 30 Days)</div>
+
+        <div class="field">
+          <label>Have you had at least 1 meaningful call (≥25 sec) on this deal?</label>
+          <div class="toggle-group" data-field="hasMeaningfulCall">
+            <button class="toggle-btn" data-value="yes">Yes</button>
+            <button class="toggle-btn" data-value="no">No</button>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Have you had at least 1 meaningful conversation (connected call, meeting, or positive chat/email/text)?</label>
+          <div class="toggle-group" data-field="hasMeaningfulConversation">
+            <button class="toggle-btn" data-value="yes">Yes</button>
+            <button class="toggle-btn" data-value="no">No</button>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Total meaningful calls in last 30 days</label>
+          <input type="number" id="totalMeaningfulCalls" placeholder="0" min="0">
+        </div>
+
+        <div class="field">
+          <label>Were those calls spread across at least 3 separate days?</label>
+          <div class="toggle-group" data-field="callsSpread3Days">
+            <button class="toggle-btn" data-value="yes">Yes</button>
+            <button class="toggle-btn" data-value="no">No</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 4: Account Status -->
+      <div class="section">
+        <div class="section-title">Account Status</div>
+
+        <div class="field">
+          <label>Is this a current paying customer?</label>
+          <div class="toggle-group" data-field="isPayingCustomer">
+            <button class="toggle-btn" data-value="yes">Yes</button>
+            <button class="toggle-btn" data-value="no">No</button>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Is this a cancelled customer?</label>
+          <div class="toggle-group" data-field="isCancelledCustomer">
+            <button class="toggle-btn" data-value="yes">Yes</button>
+            <button class="toggle-btn" data-value="no">No</button>
+          </div>
+        </div>
+
+        <div id="cancellation-date-row" class="conditional">
+          <div class="field">
+            <label>Date cancellation ticket was closed</label>
+            <input type="date" id="cancellationDate">
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Is this account on the Key Account / Enterprise list?</label>
+          <div class="toggle-group" data-field="isKeyAccount">
+            <button class="toggle-btn" data-value="yes">Yes</button>
+            <button class="toggle-btn" data-value="no">No</button>
+            <button class="toggle-btn" data-value="unknown">Not sure</button>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Is this account Partnership or Events-tagged in HubSpot?</label>
+          <div class="toggle-group" data-field="isPartnershipTagged">
+            <button class="toggle-btn" data-value="yes">Yes</button>
+            <button class="toggle-btn" data-value="no">No</button>
+            <button class="toggle-btn" data-value="unknown">Not sure</button>
+          </div>
+        </div>
+
+        <div id="partnership-date-row" class="conditional">
+          <div class="field">
+            <label>Date the partnership/event tag was applied</label>
+            <input type="date" id="partnershipTagDate">
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Was this deal created via a warm transfer or instant callback?</label>
+          <div class="toggle-group" data-field="isWarmTransfer">
+            <button class="toggle-btn" data-value="yes">Yes</button>
+            <button class="toggle-btn" data-value="no">No</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 5: Call Documentation -->
+      <div class="section">
+        <div class="section-title">Call Documentation</div>
+
+        <div class="field">
+          <label>Is the call documented in HubSpot?</label>
+          <div class="toggle-group" data-field="callLoggedInHubSpot">
+            <button class="toggle-btn" data-value="yes">Yes</button>
+            <button class="toggle-btn" data-value="no">No</button>
+          </div>
+        </div>
+
+        <div id="alt-doc-row" class="conditional">
+          <div class="field">
+            <label>Do you have alternative documentation (e.g., Zoom screenshot with number and duration)?</label>
+            <div class="toggle-group" data-field="hasAlternativeDoc">
+              <button class="toggle-btn" data-value="yes">Yes</button>
+              <button class="toggle-btn" data-value="no">No</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 6: Additional Context -->
+      <div class="section">
+        <div class="section-title">Additional Context</div>
+        <div class="field">
+          <label>Describe the situation in your own words <span style="color:var(--gr);font-weight:400">(optional)</span></label>
+          <textarea id="additionalContext" placeholder="Any other details the AI should factor in..."></textarea>
+        </div>
+      </div>
+
+      <button class="btn-submit" id="btn-submit" onclick="submitEligibility()">Analyze My Situation</button>
+    </div>
+
+    <!-- Loading -->
+    <div class="loading" id="eligibility-loading">
+      <div class="spinner"></div>
+      <div class="loading-text">Reviewing ROE rules...</div>
+    </div>
+
+    <!-- Result -->
+    <div class="result" id="eligibility-result">
+      <div class="verdict-badge" id="verdict-badge">
+        <span class="verdict-icon" id="verdict-icon"></span>
+        <span id="verdict-label"></span>
+      </div>
+      <div class="result-body" id="result-body"></div>
+      <button class="btn-reset" onclick="resetEligibility()">← New Analysis</button>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════
+       TAB 2: POLICY Q&A
+  ═══════════════════════════════════════════════════ -->
+  <div id="tab-qa" class="tab-pane">
+
+    <div class="sample-qs">
+      <button class="sample-q" onclick="fillQuestion('Can I work a deal if the last call was 16 days ago?')">Last call 16 days ago?</button>
+      <button class="sample-q" onclick="fillQuestion('What counts as a meaningful conversation?')">Meaningful conversation?</button>
+      <button class="sample-q" onclick="fillQuestion('When does a cancelled customer become eligible for new business AEs?')">Cancelled customer timing?</button>
+      <button class="sample-q" onclick="fillQuestion('How does the 50/50 split work?')">50/50 split rules?</button>
+      <button class="sample-q" onclick="fillQuestion('What happens if a deal gets tagged as a partnership account?')">Partnership tag impact?</button>
+      <button class="sample-q" onclick="fillQuestion('What is the Key Account ARR threshold?')">Key Account threshold?</button>
+    </div>
+
+    <div class="chat-messages" id="chat-messages">
+      <div class="chat-empty" id="chat-empty">
+        <div>Ask any question about the Rules of Engagement</div>
+        <div class="hint">Responses cite specific policy sections</div>
+      </div>
+      <div class="typing-indicator" id="typing-indicator">
+        <div class="typing-dot"></div>
+        <div class="typing-dot"></div>
+        <div class="typing-dot"></div>
+      </div>
+    </div>
+
+    <div class="chat-input-row">
+      <textarea class="chat-input" id="qa-input" placeholder="Ask about ROE policy..." rows="1"
+        onkeydown="handleQAKeydown(event)" oninput="autoResize(this)"></textarea>
+      <button class="btn-send" id="btn-send" onclick="sendQuestion()">Send</button>
+    </div>
+    <button class="btn-clear" onclick="clearChat()">Clear conversation</button>
+  </div>
+
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     FIREBASE CONFIG — Replace with your project config
+     Get this from: Firebase Console → Project Settings → Your apps → Web
+═══════════════════════════════════════════════════ -->
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyCVfTp-GDRHtdp0Tb6VGiTws9I0OB9RM_k",
+  authDomain: "planhub-sales-internal-tools.firebaseapp.com",
+  databaseURL: "https://planhub-sales-internal-tools-default-rtdb.firebaseio.com",
+  projectId: "planhub-sales-internal-tools",
+  storageBucket: "planhub-sales-internal-tools.firebasestorage.app",
+  messagingSenderId: "95602436947",
+  appId: "1:95602436947:web:49006a5864ad12bde8cfa6"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+// ── State ────────────────────────────────────────────────────────────────────
+const formState = {};
+let qaHistory = [];
+let qaWaiting = false;
+
+// ── Tab switching ─────────────────────────────────────────────────────────────
+function switchTab(tab) {
+  document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + tab).classList.add('active');
+  event.target.classList.add('active');
+}
+
+// ── Toggle buttons ────────────────────────────────────────────────────────────
+document.querySelectorAll('.toggle-group').forEach(group => {
+  group.addEventListener('click', e => {
+    const btn = e.target.closest('.toggle-btn');
+    if (!btn) return;
+    const field = group.dataset.field;
+    const value = btn.dataset.value;
+    formState[field] = value;
+    group.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    updateConditionalFields();
+  });
+});
+
+function updateConditionalFields() {
+  setConditional('existing-deal-details', formState.existingDeal === 'yes');
+  setConditional('task-date-row', formState.existingDeal === 'yes' && formState.hasActiveTask === 'yes');
+  setConditional('cancellation-date-row', formState.isCancelledCustomer === 'yes');
+  setConditional('partnership-date-row', formState.isPartnershipTagged === 'yes');
+  setConditional('alt-doc-row', formState.callLoggedInHubSpot === 'no');
+}
+
+function setConditional(id, show) {
+  const el = document.getElementById(id);
+  if (el) el.classList.toggle('visible', show);
+}
+
+// ── Eligibility submit ────────────────────────────────────────────────────────
+function submitEligibility() {
+  const situationType = document.getElementById('situationType').value;
+  const pipeline = document.getElementById('pipeline').value;
+
+  if (!situationType || !pipeline) {
+    alert('Please select a situation type and pipeline before submitting.');
+    return;
+  }
+
+  const payload = {
+    type: 'eligibility',
+    status: 'pending',
+    createdAt: Date.now(),
+    situationType,
+    pipeline,
+    hubspotUrl: document.getElementById('hubspotUrl').value.trim() || null,
+    existingDeal: formState.existingDeal || null,
+    existingOwner: document.getElementById('existingOwner').value.trim() || null,
+    lastCallDate: document.getElementById('lastCallDate').value || null,
+    lastCallDuration: document.getElementById('lastCallDuration').value
+      ? Number(document.getElementById('lastCallDuration').value) : null,
+    hasActiveTask: formState.hasActiveTask || null,
+    taskDate: document.getElementById('taskDate').value || null,
+    hasMeaningfulCall: formState.hasMeaningfulCall || null,
+    hasMeaningfulConversation: formState.hasMeaningfulConversation || null,
+    totalMeaningfulCalls: document.getElementById('totalMeaningfulCalls').value !== ''
+      ? Number(document.getElementById('totalMeaningfulCalls').value) : null,
+    callsSpread3Days: formState.callsSpread3Days || null,
+    isPayingCustomer: formState.isPayingCustomer || null,
+    isCancelledCustomer: formState.isCancelledCustomer || null,
+    cancellationDate: document.getElementById('cancellationDate').value || null,
+    isKeyAccount: formState.isKeyAccount || null,
+    isPartnershipTagged: formState.isPartnershipTagged || null,
+    partnershipTagDate: document.getElementById('partnershipTagDate').value || null,
+    isWarmTransfer: formState.isWarmTransfer || null,
+    callLoggedInHubSpot: formState.callLoggedInHubSpot || null,
+    hasAlternativeDoc: formState.hasAlternativeDoc || null,
+    additionalContext: document.getElementById('additionalContext').value.trim() || null,
+  };
+
+  const requestId = generateId();
+
+  document.getElementById('eligibility-form').style.display = 'none';
+  showEligibilityLoading();
+
+  db.ref('/roe-tool/requests/' + requestId).set(payload);
+  listenForEligibilityResult(requestId);
+}
+
+function listenForEligibilityResult(requestId) {
+  const ref = db.ref('/roe-tool/results/' + requestId);
+  const listener = ref.on('value', snapshot => {
+    const result = snapshot.val();
+    if (!result) return;
+    if (result.status === 'complete' || result.status === 'error') {
+      ref.off('value', listener);
+      hideEligibilityLoading();
+      displayEligibilityResult(result);
+    }
+  });
+}
+
+function displayEligibilityResult(result) {
+  const badge = document.getElementById('verdict-badge');
+  const icon = document.getElementById('verdict-icon');
+  const label = document.getElementById('verdict-label');
+  const body = document.getElementById('result-body');
+
+  if (result.status === 'error') {
+    document.getElementById('eligibility-result').classList.add('visible');
+    badge.style.display = 'none';
+    body.innerHTML = `<div class="error-msg">${result.text}</div>`;
+    showResult('eligibility');
+    return;
+  }
+
+  const text = result.text || '';
+  const verdict = parseVerdict(text);
+  const bodyText = text.replace(/^VERDICT:\s*\S+\s*\n?/, '').trim();
+
+  badge.style.display = 'flex';
+  badge.className = 'verdict-badge ' + (verdict || 'conditional');
+
+  if (verdict === 'eligible') {
+    icon.textContent = '✅';
+    label.textContent = 'Eligible';
+  } else if (verdict === 'not-eligible') {
+    icon.textContent = '❌';
+    label.textContent = 'Not Eligible';
+  } else {
+    icon.textContent = '⚠️';
+    label.textContent = 'Conditional';
+  }
+
+  body.innerHTML = renderMarkdown(bodyText);
+  showResult('eligibility');
+}
+
+function parseVerdict(text) {
+  if (/^VERDICT:\s*ELIGIBLE\b/i.test(text)) return 'eligible';
+  if (/^VERDICT:\s*NOT_ELIGIBLE\b/i.test(text)) return 'not-eligible';
+  if (/^VERDICT:\s*CONDITIONAL\b/i.test(text)) return 'conditional';
+  return null;
+}
+
+function showEligibilityLoading() {
+  document.getElementById('eligibility-loading').classList.add('visible');
+}
+function hideEligibilityLoading() {
+  document.getElementById('eligibility-loading').classList.remove('visible');
+}
+function showResult(tab) {
+  document.getElementById(tab + '-result').classList.add('visible');
+}
+
+function resetEligibility() {
+  document.getElementById('eligibility-form').style.display = 'block';
+  document.getElementById('eligibility-result').classList.remove('visible');
+  document.getElementById('eligibility-loading').classList.remove('visible');
+}
+
+// ── Q&A ───────────────────────────────────────────────────────────────────────
+function sendQuestion() {
+  const input = document.getElementById('qa-input');
+  const question = input.value.trim();
+  if (!question || qaWaiting) return;
+
+  qaWaiting = true;
+  document.getElementById('btn-send').disabled = true;
+
+  document.getElementById('chat-empty').style.display = 'none';
+  appendUserMessage(question);
+
+  const requestId = generateId();
+  const payload = {
+    type: 'qa',
+    status: 'pending',
+    question,
+    conversationHistory: [...qaHistory],
+    createdAt: Date.now(),
+  };
+
+  qaHistory.push({ role: 'user', content: question });
+  input.value = '';
+  autoResize(input);
+
+  showTypingIndicator();
+  db.ref('/roe-tool/requests/' + requestId).set(payload);
+  listenForQAResult(requestId);
+}
+
+function listenForQAResult(requestId) {
+  const ref = db.ref('/roe-tool/results/' + requestId);
+  const listener = ref.on('value', snapshot => {
+    const result = snapshot.val();
+    if (!result) return;
+    if (result.status === 'complete' || result.status === 'error') {
+      ref.off('value', listener);
+      hideTypingIndicator();
+      const text = result.text || 'Sorry, an error occurred. Please try again.';
+      appendAssistantMessage(text);
+      qaHistory.push({ role: 'assistant', content: text });
+      qaWaiting = false;
+      document.getElementById('btn-send').disabled = false;
+    }
+  });
+}
+
+function appendUserMessage(text) {
+  const container = document.getElementById('chat-messages');
+  const div = document.createElement('div');
+  div.className = 'msg msg-user';
+  div.textContent = text;
+  container.insertBefore(div, document.getElementById('typing-indicator'));
+  scrollChat();
+}
+
+function appendAssistantMessage(text) {
+  const container = document.getElementById('chat-messages');
+  const div = document.createElement('div');
+  div.className = 'msg msg-assistant';
+  div.innerHTML = renderMarkdown(text);
+  container.insertBefore(div, document.getElementById('typing-indicator'));
+  scrollChat();
+}
+
+function showTypingIndicator() {
+  document.getElementById('typing-indicator').classList.add('visible');
+  scrollChat();
+}
+function hideTypingIndicator() {
+  document.getElementById('typing-indicator').classList.remove('visible');
+}
+function scrollChat() {
+  const c = document.getElementById('chat-messages');
+  c.scrollTop = c.scrollHeight;
+}
+
+function clearChat() {
+  qaHistory = [];
+  qaWaiting = false;
+  document.getElementById('btn-send').disabled = false;
+  const container = document.getElementById('chat-messages');
+  Array.from(container.querySelectorAll('.msg')).forEach(m => m.remove());
+  document.getElementById('chat-empty').style.display = 'flex';
+  hideTypingIndicator();
+}
+
+function fillQuestion(q) {
+  document.getElementById('qa-input').value = q;
+  autoResize(document.getElementById('qa-input'));
+  document.getElementById('qa-input').focus();
+}
+
+function handleQAKeydown(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendQuestion();
+  }
+}
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+}
+
+// ── Utilities ─────────────────────────────────────────────────────────────────
+function generateId() {
+  return Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 9);
+}
+
+function renderMarkdown(text) {
+  marked.setOptions({ breaks: true, gfm: true });
+  return marked.parse(text);
+}
+</script>
+</body>
+</html>
