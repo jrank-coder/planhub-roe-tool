@@ -7,6 +7,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -234,6 +235,22 @@ input,select,textarea{font-family:var(--f)}
   <div class="header-title">ROE Assistant</div>
 </div>
 
+<!-- Auth gate -->
+<div id="auth-gate" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;gap:16px;padding:24px">
+  <div style="font-size:1.1rem;font-weight:700;color:var(--wh)">PlanHub ROE Assistant</div>
+  <div style="font-size:.85rem;color:var(--gr)">Sign in with your PlanHub Google account to continue</div>
+  <button id="btn-google-signin" onclick="signInWithGoogle()" class="btn-submit" style="width:auto;padding:10px 24px">Sign in with Google</button>
+  <div id="auth-error" style="display:none;color:#e74c3c;font-size:.8rem"></div>
+</div>
+
+<!-- Main app (hidden until authenticated) -->
+<div id="app" style="display:none">
+
+<div id="user-bar" style="font-size:.75rem;color:var(--gr);text-align:right;padding:6px 24px 0">
+  Signed in as <strong id="user-name-display"></strong> &nbsp;·&nbsp;
+  <a href="#" onclick="signOut(event)" style="color:var(--teal)">Sign out</a>
+</div>
+
 <div class="nav-tabs">
   <button class="nav-tab active" onclick="switchTab('eligibility', this)">Eligibility Checker</button>
   <button class="nav-tab" onclick="switchTab('qa', this)">Policy Q&amp;A</button>
@@ -246,6 +263,11 @@ input,select,textarea{font-family:var(--f)}
        TAB 1: ELIGIBILITY CHECKER
   ═══════════════════════════════════════ -->
   <div id="tab-eligibility" class="tab-pane active">
+
+    <!-- Disclaimer -->
+    <div style="font-size:.72rem;color:var(--gr);background:var(--bg2);border-radius:6px;padding:8px 12px;margin-bottom:16px;border-left:3px solid var(--teal)">
+      ⓘ Results are AI-generated guidance based on available data and may not reflect every edge case. Use your judgment before acting.
+    </div>
 
     <!-- INPUT VIEW -->
     <div id="elig-input">
@@ -282,9 +304,6 @@ input,select,textarea{font-family:var(--f)}
 
     <!-- CONVERSATION VIEW (shown after submit) -->
     <div id="elig-chat" style="display:none">
-      <div style="font-size:.72rem;color:var(--gr);background:var(--bg2);border-radius:6px;padding:8px 12px;margin-bottom:12px;border-left:3px solid var(--teal)">
-        ⓘ Results are AI-generated guidance based on available data and may not reflect every edge case. Use your judgment before acting.
-      </div>
       <div class="verdict-card" id="verdict-card">
         <div class="verdict-header">
           <span class="verdict-icon" id="verdict-icon"></span>
@@ -636,6 +655,8 @@ function submitEligibility() {
     hubspotUrl2: isDuplicate ? url2 : null,
     additionalContext: context || null,
     conversationHistory: [],
+    userEmail: currentUser?.email || null,
+    userName: currentUser?.displayName || null,
     createdAt: Date.now(),
   };
 
@@ -793,6 +814,8 @@ function sendQuestion() {
     status: 'pending',
     question,
     conversationHistory: [...qaHistory.slice(0, -1)],
+    userEmail: currentUser?.email || null,
+    userName: currentUser?.displayName || null,
     createdAt: Date.now(),
   });
 
@@ -874,6 +897,41 @@ function autoResize(el) {
   el.style.height = 'auto';
   el.style.height = Math.min(el.scrollHeight, 120) + 'px';
 }
+
+// ── Auth ───────────────────────────────────────────────────────────────────────
+let currentUser = null;
+
+function signInWithGoogle() {
+  const provider = new firebase.auth.GoogleAuthProvider();
+  provider.setCustomParameters({ hd: 'planhub.com' });
+  firebase.auth().signInWithPopup(provider).catch(() => {
+    document.getElementById('auth-error').textContent = 'Sign-in failed. Try again.';
+    document.getElementById('auth-error').style.display = 'block';
+  });
+}
+
+function signOut(e) {
+  if (e) e.preventDefault();
+  firebase.auth().signOut();
+}
+
+firebase.auth().onAuthStateChanged(user => {
+  if (!user) {
+    document.getElementById('auth-gate').style.display = 'flex';
+    document.getElementById('app').style.display = 'none';
+    currentUser = null;
+  } else if (!user.email.endsWith('@planhub.com')) {
+    firebase.auth().signOut();
+    document.getElementById('auth-error').textContent = 'Access restricted to @planhub.com accounts.';
+    document.getElementById('auth-error').style.display = 'block';
+  } else {
+    currentUser = user;
+    document.getElementById('auth-gate').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    document.getElementById('user-name-display').textContent = user.displayName || user.email;
+  }
+});
 </script>
+</div><!-- /#app -->
 </body>
 </html>
