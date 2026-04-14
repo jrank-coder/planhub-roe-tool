@@ -28,20 +28,23 @@ exports.processROERequest = onValueCreated(
     const resultRef = db.ref(`/roe-tool/results/${requestId}`);
 
     try {
-      // Fetch live HubSpot data for both deals if URLs provided
       let hubspotContext1 = "";
       let hubspotContext2 = "";
 
       if (request.hubspotUrl && hubspotKey.value()) {
-        hubspotContext1 = await fetchHubSpotData(request.hubspotUrl, hubspotKey.value(), "Deal");
+        hubspotContext1 = await fetchHubSpotData(request.hubspotUrl, hubspotKey.value(), "Record 1");
       }
       if (request.hubspotUrl2 && hubspotKey.value()) {
-        hubspotContext2 = await fetchHubSpotData(request.hubspotUrl2, hubspotKey.value(), "Second Deal");
+        hubspotContext2 = await fetchHubSpotData(request.hubspotUrl2, hubspotKey.value(), "Record 2");
       }
 
-      const userMessage = buildUserMessage(request, hubspotContext1, hubspotContext2);
+      let aeIdentity = null;
+      if (request.userEmail && hubspotKey.value()) {
+        aeIdentity = await lookupHubSpotOwner(request.userEmail, hubspotKey.value());
+      }
 
-      // Build message array (include conversation history for multi-turn)
+      const userMessage = buildUserMessage(request, hubspotContext1, hubspotContext2, aeIdentity);
+
       const messages = [];
       if (Array.isArray(request.conversationHistory)) {
         messages.push(...request.conversationHistory);
@@ -78,9 +81,20 @@ exports.processROERequest = onValueCreated(
 
 // ─── Message builder ────────────────────────────────────────────────────────
 
-function buildUserMessage(request, hubspotContext1, hubspotContext2) {
+function buildUserMessage(request, hubspotContext1, hubspotContext2, aeIdentity) {
   if (request.type === "qa") {
-    return request.question || "";
+    const lines = [];
+    if (aeIdentity) {
+      lines.push(
+        "AE IDENTITY (logged-in user):",
+        `Name: ${aeIdentity.name}`,
+        `Email: ${aeIdentity.email}`,
+        `HubSpot Owner ID: ${aeIdentity.id}`,
+        ""
+      );
+    }
+    lines.push(request.question || "");
+    return lines.join("\n");
   }
 
   const lines = [
@@ -89,16 +103,26 @@ function buildUserMessage(request, hubspotContext1, hubspotContext2) {
     "",
   ];
 
+  if (aeIdentity) {
+    lines.push(
+      "AE IDENTITY (logged-in user):",
+      `Name: ${aeIdentity.name}`,
+      `Email: ${aeIdentity.email}`,
+      `HubSpot Owner ID: ${aeIdentity.id}`,
+      ""
+    );
+  }
+
   if (hubspotContext1) {
-    lines.push("DEAL DATA (from HubSpot):", hubspotContext1, "");
+    lines.push("HUBSPOT DATA (Record 1):", hubspotContext1, "");
   } else if (request.hubspotUrl) {
-    lines.push(`DEAL URL: ${request.hubspotUrl}`, "(HubSpot data unavailable)", "");
+    lines.push(`HUBSPOT URL (Record 1): ${request.hubspotUrl}`, "(HubSpot data unavailable)", "");
   }
 
   if (hubspotContext2) {
-    lines.push("SECOND DEAL DATA (from HubSpot):", hubspotContext2, "");
+    lines.push("HUBSPOT DATA (Record 2):", hubspotContext2, "");
   } else if (request.hubspotUrl2) {
-    lines.push(`SECOND DEAL URL: ${request.hubspotUrl2}`, "(HubSpot data unavailable)", "");
+    lines.push(`HUBSPOT URL (Record 2): ${request.hubspotUrl2}`, "(HubSpot data unavailable)", "");
   }
 
   if (request.additionalContext) {
@@ -108,209 +132,443 @@ function buildUserMessage(request, hubspotContext1, hubspotContext2) {
   return lines.join("\n");
 }
 
-// ─── HubSpot data fetcher ────────────────────────────────────────────────────
+// ─── HubSpot owner lookup ────────────────────────────────────────────────────
 
-async function fetchHubSpotData(dealUrl, apiKey, label = "Deal") {
+async function lookupHubSpotOwner(email, apiKey) {
   try {
-    const match = dealUrl.match(/\/deal\/(\d+)/);
-    if (!match) return `(Could not parse deal ID from URL: ${dealUrl})`;
-    const dealId = match[1];
-
-    const headers = {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
+    const res = await fetch(
+      `https://api.hubapi.com/crm/v3/owners?email=${encodeURIComponent(email)}&limit=1`,
+      { headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" } }
+    );
+    if (!res.ok) return null;
+    const data = await res.json();
+    const owner = data.results?.[0];
+    if (!owner) return null;
+    return {
+      id: owner.id,
+      name: `${owner.firstName} ${owner.lastName}`.trim(),
+      email: owner.email,
     };
+  } catch {
+    return null;
+  }
+}
 
-    const dealProps = [
-      "dealname", "pipeline", "dealstage", "closedate", "amount",
-      "hubspot_owner_id", "opportunity_type", "deal_initiative",
-      "last_ae_call_date", "last_connected_call_date",
-      "50_split_ae", "partnership_association", "event_sourced",
-      "sdr_qualification", "sdr_owner", "sdr_qualification_date",
-      "hs_created_by_user_id",
-    ].join(",");
+// ─── URL type detection ──────────────────────────────────────────────────────
 
-    const dealRes = await fetch(
-      `https://api.hubapi.com/crm/v3/objects/deals/${dealId}?properties=${dealProps}&associations=companies,contacts`,
-      { headers }
-    );
+function parseHubSpotUrl(url) {
+  const dealMatch = url.match(/\/deal\/(\d+)/);
+  if (dealMatch) return { type: "deal", id: dealMatch[1] };
 
-    if (!dealRes.ok) {
-      return `(HubSpot ${label} lookup failed: HTTP ${dealRes.status})`;
+  const companyMatch = url.match(/\/company\/(\d+)/);
+  if (companyMatch) return { type: "company", id: companyMatch[1] };
+
+  const contactMatch = url.match(/\/contact\/(\d+)/);
+  if (contactMatch) return { type: "contact", id: contactMatch[1] };
+
+  return null;
+}
+
+// ─── Main HubSpot dispatcher ─────────────────────────────────────────────────
+
+async function fetchHubSpotData(url, apiKey, label = "Record") {
+  try {
+    const parsed = parseHubSpotUrl(url);
+    if (!parsed) {
+      return `(Could not parse HubSpot URL — expected a /deal/, /company/, or /contact/ path: ${url})`;
     }
 
-    const deal = await dealRes.json();
-    const p = deal.properties || {};
+    if (parsed.type === "deal") return await fetchDealData(parsed.id, apiKey, label);
+    if (parsed.type === "company") return await fetchCompanyData(parsed.id, apiKey, label);
+    if (parsed.type === "contact") return await fetchContactData(parsed.id, apiKey, label);
 
-    // ── Warm transfer / EverPro detection ──
-    const isWarmTransfer = p.sdr_qualification === "Qualified: Warm Transfer";
-    const isEverProMines = p.opportunity_type === "Outsourced";
-    const isEverProNew = p.deal_initiative === "EverPro";
-    const isEverPro = isEverProMines || isEverProNew;
-    const warmTransferByDefinition = isWarmTransfer || isEverPro;
-
-    // ── Deal creation method ──
-    const createdByUserId = p.hs_created_by_user_id;
-    let creationMethod;
-    if (warmTransferByDefinition) {
-      creationMethod = "Warm transfer / EverPro — duplicate check NOT required";
-    } else if (!createdByUserId || createdByUserId === "0") {
-      creationMethod = "System/automation-created — lower feasibility bar for duplicate check";
-    } else {
-      creationMethod = `Manually created by user ID ${createdByUserId} — full duplicate check required`;
-    }
-
-    const lines = [
-      `Deal name: ${p.dealname || "Unknown"}`,
-      `Owner ID: ${p.hubspot_owner_id || "Unknown"}`,
-      `Pipeline: ${p.pipeline || "Unknown"}`,
-      `Stage: ${p.dealstage || "Unknown"}`,
-      `Opportunity type: ${p.opportunity_type || "Unknown"}`,
-      `Deal initiative: ${p.deal_initiative || "None"}`,
-      `Amount: ${p.amount ? "$" + Number(p.amount).toLocaleString() : "Unknown"}`,
-      `Close date: ${p.closedate || "Unknown"}`,
-      `SDR qualification: ${p.sdr_qualification || "None"}`,
-      `SDR owner: ${p.sdr_owner || "None"}`,
-      `50/50 split AE: ${p["50_split_ae"] || "None"}`,
-      `Partnership association: ${p.partnership_association || "None"}`,
-      `Event sourced: ${p.event_sourced || "No"}`,
-      `Deal creation method: ${creationMethod}`,
-    ];
-
-    if (isWarmTransfer) lines.push("⚠ WARM TRANSFER — duplicate check not required per ROE");
-    if (isEverPro) lines.push(`⚠ EVERPRO DEAL (${isEverProMines ? "Mines/Outsourced" : "New"}) — warm transfer by definition, duplicate check not required per ROE`);
-
-    // ── Associated company ──
-    const companyId = deal.associations?.companies?.results?.[0]?.id;
-    if (companyId) {
-      const companyProps = [
-        "name", "subscription", "chargebee_status",
-        "chargebee_cancellation_date", "planhub_company_create_date",
-        "domain", "phone",
-      ].join(",");
-
-      const companyRes = await fetch(
-        `https://api.hubapi.com/crm/v3/objects/companies/${companyId}?properties=${companyProps}`,
-        { headers }
-      );
-
-      if (companyRes.ok) {
-        const company = await companyRes.json();
-        const cp = company.properties || {};
-        lines.push(
-          "",
-          `Company: ${cp.name || "Unknown"}`,
-          `Domain: ${cp.domain || "Unknown"}`,
-          `Phone: ${cp.phone || "Unknown"}`,
-          `Subscription (company-level): ${cp.subscription || "Unknown"}`,
-          `Chargebee status: ${cp.chargebee_status || "Unknown"}`,
-          `Chargebee cancellation date: ${cp.chargebee_cancellation_date || "None"}`,
-          `PlanHub registration date: ${cp.planhub_company_create_date || "Unknown"}`
-        );
-      }
-    }
-
-    // ── Associated contacts (for duplicate company matching) ──
-    const contactId = deal.associations?.contacts?.results?.[0]?.id;
-    if (contactId) {
-      const contactRes = await fetch(
-        `https://api.hubapi.com/crm/v3/objects/contacts/${contactId}?properties=firstname,lastname,email,phone`,
-        { headers }
-      );
-      if (contactRes.ok) {
-        const contact = await contactRes.json();
-        const ct = contact.properties || {};
-        lines.push(
-          "",
-          `Primary contact: ${ct.firstname || ""} ${ct.lastname || ""}`.trim() || "Unknown",
-          `Contact email: ${ct.email || "Unknown"}`,
-          `Contact phone: ${ct.phone || "Unknown"}`
-        );
-      }
-    }
-
-    // ── Calls in last 30 days ──
-    const callAssocRes = await fetch(
-      `https://api.hubapi.com/crm/v3/objects/deals/${dealId}/associations/calls`,
-      { headers }
-    );
-
-    if (callAssocRes.ok) {
-      const callAssoc = await callAssocRes.json();
-      const callIds = (callAssoc.results || []).slice(0, 20).map((c) => c.id);
-
-      if (callIds.length > 0) {
-        const batchRes = await fetch(
-          "https://api.hubapi.com/crm/v3/objects/calls/batch/read",
-          {
-            method: "POST",
-            headers,
-            body: JSON.stringify({
-              inputs: callIds.map((id) => ({ id })),
-              properties: [
-                "hs_call_duration", "hs_call_direction", "hs_call_status",
-                "hs_timestamp", "hs_call_body", "hs_call_source",
-              ],
-            }),
-          }
-        );
-
-        if (batchRes.ok) {
-          const batchData = await batchRes.json();
-          const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
-
-          const recentCalls = (batchData.results || []).filter((call) => {
-            const ts = call.properties.hs_timestamp
-              ? new Date(call.properties.hs_timestamp).getTime()
-              : 0;
-            const notes = (call.properties.hs_call_body || "").toLowerCase();
-            const source = (call.properties.hs_call_source || "").toLowerCase();
-            return ts >= thirtyDaysAgo && !notes.includes("gong") && source !== "playbook";
-          });
-
-          const meaningfulCalls = recentCalls.filter((c) => {
-            const dur = c.properties.hs_call_duration
-              ? Math.round(Number(c.properties.hs_call_duration) / 1000)
-              : 0;
-            return dur >= 25;
-          });
-
-          // Get unique call days
-          const callDays = new Set(
-            meaningfulCalls.map((c) =>
-              c.properties.hs_timestamp
-                ? new Date(c.properties.hs_timestamp).toLocaleDateString()
-                : null
-            ).filter(Boolean)
-          );
-
-          lines.push(
-            "",
-            `Calls in last 30 days (gong/playbook excluded): ${recentCalls.length}`,
-            `Meaningful calls (≥25s): ${meaningfulCalls.length}`,
-            `Unique call days: ${callDays.size}`
-          );
-
-          recentCalls.forEach((call) => {
-            const cp = call.properties;
-            const durationSec = cp.hs_call_duration
-              ? Math.round(Number(cp.hs_call_duration) / 1000)
-              : 0;
-            const date = cp.hs_timestamp
-              ? new Date(cp.hs_timestamp).toLocaleDateString()
-              : "Unknown date";
-            const meaningful = durationSec >= 25 ? "✓ meaningful" : "✗ too short (<25s)";
-            lines.push(`  - ${date}: ${durationSec}s — ${meaningful}`);
-          });
-        }
-      } else {
-        lines.push("", "Calls in last 30 days: none found");
-      }
-    }
-
-    return lines.join("\n");
+    return `(Unrecognized HubSpot URL type: ${url})`;
   } catch (err) {
     console.error(`HubSpot fetch error (${label}):`, err);
     return `(HubSpot data unavailable: ${err.message})`;
   }
+}
+
+// ─── Deal fetcher ────────────────────────────────────────────────────────────
+
+async function fetchDealData(dealId, apiKey, label = "Deal") {
+  const headers = {
+    Authorization: `Bearer ${apiKey}`,
+    "Content-Type": "application/json",
+  };
+
+  const dealProps = [
+    "dealname", "pipeline", "dealstage", "closedate", "amount",
+    "hubspot_owner_id", "opportunity_type", "deal_initiative",
+    "last_ae_call_date", "last_connected_call_date",
+    "50_split_ae", "partnership_association", "event_sourced",
+    "sdr_qualification", "sdr_owner", "sdr_qualification_date",
+    "hs_created_by_user_id",
+  ].join(",");
+
+  const dealRes = await fetch(
+    `https://api.hubapi.com/crm/v3/objects/deals/${dealId}?properties=${dealProps}&associations=companies,contacts`,
+    { headers }
+  );
+
+  if (!dealRes.ok) {
+    return `(HubSpot ${label} lookup failed: HTTP ${dealRes.status})`;
+  }
+
+  const deal = await dealRes.json();
+  const p = deal.properties || {};
+
+  const isWarmTransfer = p.sdr_qualification === "Qualified: Warm Transfer";
+  const isEverProMines = p.opportunity_type === "Outsourced";
+  const isEverProNew = p.deal_initiative === "EverPro";
+  const isEverPro = isEverProMines || isEverProNew;
+  const warmTransferByDefinition = isWarmTransfer || isEverPro;
+
+  const createdByUserId = p.hs_created_by_user_id;
+  let creationMethod;
+  if (warmTransferByDefinition) {
+    creationMethod = "Warm transfer / EverPro — duplicate check NOT required";
+  } else if (!createdByUserId || createdByUserId === "0") {
+    creationMethod = "System/automation-created — lower feasibility bar for duplicate check";
+  } else {
+    creationMethod = `Manually created by user ID ${createdByUserId} — full duplicate check required`;
+  }
+
+  const lines = [
+    `[${label.toUpperCase()} — DEAL RECORD]`,
+    `Deal name: ${p.dealname || "Unknown"}`,
+    `Owner ID: ${p.hubspot_owner_id || "Unknown"}`,
+    `Pipeline: ${p.pipeline || "Unknown"}`,
+    `Stage: ${p.dealstage || "Unknown"}`,
+    `Opportunity type: ${p.opportunity_type || "Unknown"}`,
+    `Deal initiative: ${p.deal_initiative || "None"}`,
+    `Amount: ${p.amount ? "$" + Number(p.amount).toLocaleString() : "Unknown"}`,
+    `Close date: ${p.closedate || "Unknown"}`,
+    `SDR qualification: ${p.sdr_qualification || "None"}`,
+    `SDR owner: ${p.sdr_owner || "None"}`,
+    `50/50 split AE: ${p["50_split_ae"] || "None"}`,
+    `Partnership association: ${p.partnership_association || "None"}`,
+    `Event sourced: ${p.event_sourced || "No"}`,
+    `Deal creation method: ${creationMethod}`,
+  ];
+
+  if (isWarmTransfer) lines.push("⚠ WARM TRANSFER — duplicate check not required per ROE");
+  if (isEverPro) lines.push(`⚠ EVERPRO DEAL (${isEverProMines ? "Mines/Outsourced" : "New"}) — warm transfer by definition, duplicate check not required per ROE`);
+
+  // Associated company
+  const companyId = deal.associations?.companies?.results?.[0]?.id;
+  if (companyId) {
+    const companyLines = await fetchCompanyProperties(companyId, headers);
+    lines.push("", ...companyLines);
+  }
+
+  // Associated contact
+  const contactId = deal.associations?.contacts?.results?.[0]?.id;
+  if (contactId) {
+    const contactRes = await fetch(
+      `https://api.hubapi.com/crm/v3/objects/contacts/${contactId}?properties=firstname,lastname,email,phone`,
+      { headers }
+    );
+    if (contactRes.ok) {
+      const contact = await contactRes.json();
+      const ct = contact.properties || {};
+      lines.push(
+        "",
+        `Primary contact: ${`${ct.firstname || ""} ${ct.lastname || ""}`.trim() || "Unknown"}`,
+        `Contact email: ${ct.email || "Unknown"}`,
+        `Contact phone: ${ct.phone || "Unknown"}`
+      );
+    }
+  }
+
+  // Calls
+  const callLines = await fetchCallsForDeal(dealId, headers);
+  lines.push("", ...callLines);
+
+  return lines.join("\n");
+}
+
+// ─── Company fetcher ─────────────────────────────────────────────────────────
+
+async function fetchCompanyData(companyId, apiKey, label = "Company") {
+  const headers = {
+    Authorization: `Bearer ${apiKey}`,
+    "Content-Type": "application/json",
+  };
+
+  const lines = [`[${label.toUpperCase()} — COMPANY RECORD]`];
+
+  const companyLines = await fetchCompanyProperties(companyId, headers);
+  lines.push(...companyLines);
+
+  // Associated deals
+  const dealAssocRes = await fetch(
+    `https://api.hubapi.com/crm/v3/objects/companies/${companyId}/associations/deals`,
+    { headers }
+  );
+
+  if (!dealAssocRes.ok) {
+    lines.push("", "(Could not retrieve associated deals)");
+    return lines.join("\n");
+  }
+
+  const dealAssoc = await dealAssocRes.json();
+  const allDealIds = (dealAssoc.results || []).map((d) => d.id);
+  const dealIds = allDealIds.slice(0, 5);
+
+  if (dealIds.length === 0) {
+    lines.push("", "Associated deals: none found");
+    return lines.join("\n");
+  }
+
+  lines.push(
+    "",
+    `Associated deals (${allDealIds.length} total${allDealIds.length > 5 ? ", showing 5 most recent" : ""}):`
+  );
+
+  const batchRes = await fetch(
+    "https://api.hubapi.com/crm/v3/objects/deals/batch/read",
+    {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        inputs: dealIds.map((id) => ({ id })),
+        properties: [
+          "dealname", "pipeline", "dealstage", "closedate", "amount",
+          "hubspot_owner_id", "opportunity_type", "deal_initiative",
+          "sdr_qualification", "sdr_owner", "50_split_ae",
+        ],
+      }),
+    }
+  );
+
+  if (batchRes.ok) {
+    const batchData = await batchRes.json();
+    for (const d of (batchData.results || [])) {
+      const dp = d.properties || {};
+      lines.push(
+        "",
+        `  Deal: ${dp.dealname || "Unknown"}`,
+        `  Deal ID: ${d.id}`,
+        `  Owner ID: ${dp.hubspot_owner_id || "Unknown"}`,
+        `  Pipeline: ${dp.pipeline || "Unknown"}`,
+        `  Stage: ${dp.dealstage || "Unknown"}`,
+        `  Amount: ${dp.amount ? "$" + Number(dp.amount).toLocaleString() : "Unknown"}`,
+        `  Close date: ${dp.closedate || "Unknown"}`
+      );
+      const callLines = await fetchCallsForDeal(d.id, headers);
+      lines.push(...callLines.map((l) => `  ${l}`));
+    }
+  }
+
+  return lines.join("\n");
+}
+
+// ─── Contact fetcher ─────────────────────────────────────────────────────────
+
+async function fetchContactData(contactId, apiKey, label = "Contact") {
+  const headers = {
+    Authorization: `Bearer ${apiKey}`,
+    "Content-Type": "application/json",
+  };
+
+  const contactRes = await fetch(
+    `https://api.hubapi.com/crm/v3/objects/contacts/${contactId}?properties=firstname,lastname,email,phone&associations=companies,deals`,
+    { headers }
+  );
+
+  if (!contactRes.ok) {
+    return `(HubSpot ${label} lookup failed: HTTP ${contactRes.status})`;
+  }
+
+  const contact = await contactRes.json();
+  const ct = contact.properties || {};
+
+  const lines = [
+    `[${label.toUpperCase()} — CONTACT RECORD]`,
+    `Name: ${`${ct.firstname || ""} ${ct.lastname || ""}`.trim() || "Unknown"}`,
+    `Email: ${ct.email || "Unknown"}`,
+    `Phone: ${ct.phone || "Unknown"}`,
+  ];
+
+  const companyId = contact.associations?.companies?.results?.[0]?.id;
+
+  if (companyId) {
+    lines.push("", "→ Associated company found:");
+    const companyData = await fetchCompanyData(companyId, apiKey, "Associated Company");
+    lines.push(companyData);
+    return lines.join("\n");
+  }
+
+  // No associated company — fall back to contact's associated deals
+  lines.push("", "(No associated company found)");
+
+  const allDealIds = (contact.associations?.deals?.results || []).map((d) => d.id);
+  const dealIds = allDealIds.slice(0, 5);
+
+  if (dealIds.length === 0) {
+    lines.push("Associated deals: none found");
+    return lines.join("\n");
+  }
+
+  lines.push(
+    "",
+    `Associated deals (${allDealIds.length} total${allDealIds.length > 5 ? ", showing 5 most recent" : ""}):`
+  );
+
+  const batchRes = await fetch(
+    "https://api.hubapi.com/crm/v3/objects/deals/batch/read",
+    {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        inputs: dealIds.map((id) => ({ id })),
+        properties: [
+          "dealname", "pipeline", "dealstage", "closedate", "amount",
+          "hubspot_owner_id", "opportunity_type", "deal_initiative",
+          "sdr_qualification", "sdr_owner", "50_split_ae",
+        ],
+      }),
+    }
+  );
+
+  if (batchRes.ok) {
+    const batchData = await batchRes.json();
+    for (const d of (batchData.results || [])) {
+      const dp = d.properties || {};
+      lines.push(
+        "",
+        `  Deal: ${dp.dealname || "Unknown"}`,
+        `  Deal ID: ${d.id}`,
+        `  Owner ID: ${dp.hubspot_owner_id || "Unknown"}`,
+        `  Pipeline: ${dp.pipeline || "Unknown"}`,
+        `  Stage: ${dp.dealstage || "Unknown"}`,
+        `  Amount: ${dp.amount ? "$" + Number(dp.amount).toLocaleString() : "Unknown"}`,
+        `  Close date: ${dp.closedate || "Unknown"}`
+      );
+      const callLines = await fetchCallsForDeal(d.id, headers);
+      lines.push(...callLines.map((l) => `  ${l}`));
+    }
+  }
+
+  return lines.join("\n");
+}
+
+// ─── Company properties helper ───────────────────────────────────────────────
+
+async function fetchCompanyProperties(companyId, headers) {
+  const companyProps = [
+    "name", "subscription", "chargebee_status",
+    "chargebee_cancellation_date", "planhub_company_create_date",
+    "domain", "phone", "key_account", "account_manager",
+  ].join(",");
+
+  const companyRes = await fetch(
+    `https://api.hubapi.com/crm/v3/objects/companies/${companyId}?properties=${companyProps}`,
+    { headers }
+  );
+
+  if (!companyRes.ok) return [`(Company lookup failed: HTTP ${companyRes.status})`];
+
+  const company = await companyRes.json();
+  const cp = company.properties || {};
+
+  return [
+    `Company: ${cp.name || "Unknown"}`,
+    `Domain: ${cp.domain || "Unknown"}`,
+    `Phone: ${cp.phone || "Unknown"}`,
+    `Subscription (company-level): ${cp.subscription || "Unknown"}`,
+    `Chargebee status: ${cp.chargebee_status || "Unknown"}`,
+    `Chargebee cancellation date: ${cp.chargebee_cancellation_date || "None"}`,
+    `PlanHub registration date: ${cp.planhub_company_create_date || "Unknown"}`,
+    `Key account: ${cp.key_account || "No"}`,
+    `Account manager: ${cp.account_manager || "Unknown"}`,
+  ];
+}
+
+// ─── Calls helper ────────────────────────────────────────────────────────────
+
+async function fetchCallsForDeal(dealId, headers) {
+  const lines = [];
+
+  const callAssocRes = await fetch(
+    `https://api.hubapi.com/crm/v3/objects/deals/${dealId}/associations/calls`,
+    { headers }
+  );
+
+  if (!callAssocRes.ok) return lines;
+
+  const callAssoc = await callAssocRes.json();
+  const callIds = (callAssoc.results || []).slice(0, 20).map((c) => c.id);
+
+  if (callIds.length === 0) {
+    lines.push("Calls in last 30 days: none found");
+    return lines;
+  }
+
+  const batchRes = await fetch(
+    "https://api.hubapi.com/crm/v3/objects/calls/batch/read",
+    {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        inputs: callIds.map((id) => ({ id })),
+        properties: [
+          "hs_call_duration", "hs_call_direction", "hs_call_status",
+          "hs_timestamp", "hs_call_body", "hs_call_source",
+        ],
+      }),
+    }
+  );
+
+  if (!batchRes.ok) return lines;
+
+  const batchData = await batchRes.json();
+  const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
+
+  const recentCalls = (batchData.results || []).filter((call) => {
+    const ts = call.properties.hs_timestamp
+      ? new Date(call.properties.hs_timestamp).getTime()
+      : 0;
+    const notes = (call.properties.hs_call_body || "").toLowerCase();
+    const source = (call.properties.hs_call_source || "").toLowerCase();
+    return ts >= thirtyDaysAgo && !notes.includes("gong") && source !== "playbook";
+  });
+
+  const meaningfulCalls = recentCalls.filter((c) => {
+    const dur = c.properties.hs_call_duration
+      ? Math.round(Number(c.properties.hs_call_duration) / 1000)
+      : 0;
+    return dur >= 25;
+  });
+
+  const callDays = new Set(
+    meaningfulCalls
+      .map((c) =>
+        c.properties.hs_timestamp
+          ? new Date(c.properties.hs_timestamp).toLocaleDateString()
+          : null
+      )
+      .filter(Boolean)
+  );
+
+  lines.push(
+    `Calls in last 30 days (gong/playbook excluded): ${recentCalls.length}`,
+    `Meaningful calls (≥25s): ${meaningfulCalls.length}`,
+    `Unique call days: ${callDays.size}`
+  );
+
+  recentCalls.forEach((call) => {
+    const cp = call.properties;
+    const durationSec = cp.hs_call_duration
+      ? Math.round(Number(cp.hs_call_duration) / 1000)
+      : 0;
+    const date = cp.hs_timestamp
+      ? new Date(cp.hs_timestamp).toLocaleDateString()
+      : "Unknown date";
+    const meaningful = durationSec >= 25 ? "✓ meaningful" : "✗ too short (<25s)";
+    lines.push(`  - ${date}: ${durationSec}s — ${meaningful}`);
+  });
+
+  return lines;
 }
