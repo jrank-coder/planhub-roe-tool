@@ -33,20 +33,24 @@ exports.processROERequest = onValueCreated(
     const resultRef = db.ref(`/roe-tool/results/${requestId}`);
 
     try {
-      let hubspotContext1 = "";
-      let hubspotContext2 = "";
-
+      const fetchPromises = [];
       if (request.hubspotUrl && hubspotKey.value()) {
-        hubspotContext1 = await fetchHubSpotData(request.hubspotUrl, hubspotKey.value(), "Record 1");
+        fetchPromises.push(fetchHubSpotData(request.hubspotUrl, hubspotKey.value(), "Record 1"));
+      } else {
+        fetchPromises.push(Promise.resolve(""));
       }
       if (request.hubspotUrl2 && hubspotKey.value()) {
-        hubspotContext2 = await fetchHubSpotData(request.hubspotUrl2, hubspotKey.value(), "Record 2");
+        fetchPromises.push(fetchHubSpotData(request.hubspotUrl2, hubspotKey.value(), "Record 2"));
+      } else {
+        fetchPromises.push(Promise.resolve(""));
+      }
+      if (request.userEmail && hubspotKey.value()) {
+        fetchPromises.push(lookupHubSpotOwner(request.userEmail, hubspotKey.value()));
+      } else {
+        fetchPromises.push(Promise.resolve(null));
       }
 
-      let aeIdentity = null;
-      if (request.userEmail && hubspotKey.value()) {
-        aeIdentity = await lookupHubSpotOwner(request.userEmail, hubspotKey.value());
-      }
+      const [hubspotContext1, hubspotContext2, aeIdentity] = await Promise.all(fetchPromises);
 
       const userMessage = buildUserMessage(request, hubspotContext1, hubspotContext2, aeIdentity);
 
@@ -260,34 +264,29 @@ async function fetchDealData(dealId, apiKey, label = "Deal") {
   if (isWarmTransfer) lines.push("⚠ WARM TRANSFER — duplicate check not required per ROE");
   if (isEverPro) lines.push(`⚠ EVERPRO DEAL (${isEverProMines ? "Mines/Outsourced" : "New"}) — warm transfer by definition, duplicate check not required per ROE`);
 
-  // Associated company
+  // Fetch company, contact, and calls in parallel
   const companyId = deal.associations?.companies?.results?.[0]?.id;
-  if (companyId) {
-    const companyLines = await fetchCompanyProperties(companyId, headers);
-    lines.push("", ...companyLines);
-  }
-
-  // Associated contact
   const contactId = deal.associations?.contacts?.results?.[0]?.id;
-  if (contactId) {
-    const contactRes = await hsFetch(
-      `https://api.hubapi.com/crm/v3/objects/contacts/${contactId}?properties=firstname,lastname,email,phone`,
-      { headers }
+
+  const [companyLines, contactRes, callLines] = await Promise.all([
+    companyId ? fetchCompanyProperties(companyId, headers) : Promise.resolve([]),
+    contactId ? hsFetch(`https://api.hubapi.com/crm/v3/objects/contacts/${contactId}?properties=firstname,lastname,email,phone`, { headers }) : Promise.resolve(null),
+    fetchCallsForDeal(dealId, headers),
+  ]);
+
+  if (companyLines.length) lines.push("", ...companyLines);
+
+  if (contactRes?.ok) {
+    const contact = await contactRes.json();
+    const ct = contact.properties || {};
+    lines.push(
+      "",
+      `Primary contact: ${`${ct.firstname || ""} ${ct.lastname || ""}`.trim() || "Unknown"}`,
+      `Contact email: ${ct.email || "Unknown"}`,
+      `Contact phone: ${ct.phone || "Unknown"}`
     );
-    if (contactRes.ok) {
-      const contact = await contactRes.json();
-      const ct = contact.properties || {};
-      lines.push(
-        "",
-        `Primary contact: ${`${ct.firstname || ""} ${ct.lastname || ""}`.trim() || "Unknown"}`,
-        `Contact email: ${ct.email || "Unknown"}`,
-        `Contact phone: ${ct.phone || "Unknown"}`
-      );
-    }
   }
 
-  // Calls
-  const callLines = await fetchCallsForDeal(dealId, headers);
   lines.push("", ...callLines);
 
   return lines.join("\n");
