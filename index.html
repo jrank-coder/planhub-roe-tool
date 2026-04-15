@@ -266,7 +266,7 @@ input,select,textarea{font-family:var(--f)}
 
     <!-- Disclaimer -->
     <div style="font-size:.72rem;color:var(--gr);background:var(--bg2);border-radius:6px;padding:8px 12px;margin-bottom:16px;border-left:3px solid var(--teal)">
-      ⓘ Results are AI-generated guidance based on available data and may not reflect every edge case. Use your judgment before acting.
+      ⓘ Results are AI-generated guidance based on available data and may not reflect every edge case.
     </div>
 
     <!-- INPUT VIEW -->
@@ -383,8 +383,9 @@ input,select,textarea{font-family:var(--f)}
           <div class="threshold-pill">Meaningful call minimum: <span>25 seconds</span></div>
           <div class="threshold-pill">Duplicate check (call): <span>14 days</span></div>
           <div class="threshold-pill">Duplicate check (active task): <span>30 days</span></div>
-          <div class="threshold-pill">Cancelled → Upsell: <span>0–91 days</span></div>
-          <div class="threshold-pill">Cancelled → New Business eligible: <span>91+ days</span></div>
+          <div class="threshold-pill">Cancelled → Save team: <span>0–14 days</span></div>
+          <div class="threshold-pill">Cancelled → Upsell: <span>15–89 days</span></div>
+          <div class="threshold-pill">Cancelled → New Business eligible: <span>90+ days</span></div>
           <div class="threshold-pill">Key Account ARR threshold: <span>&gt;$5,000</span></div>
           <div class="threshold-pill">Clawback window: <span>90 days</span></div>
           <div class="threshold-pill">Upsell touch window: <span>1 business day</span></div>
@@ -703,10 +704,20 @@ function sendEligFollowup() {
 
 function listenForEligResult(requestId) {
   const ref = db.ref('/roe-tool/results/' + requestId);
+
+  const timeout = setTimeout(() => {
+    ref.off('value', listener);
+    hideEligTyping();
+    eligWaiting = false;
+    document.getElementById('btn-elig-send').disabled = false;
+    appendEligMessage('assistant', 'Request timed out — the analysis is taking longer than expected. Please try again or contact RevOps directly.');
+  }, 90000);
+
   const listener = ref.on('value', snapshot => {
     const result = snapshot.val();
     if (!result) return;
     if (result.status === 'complete' || result.status === 'error') {
+      clearTimeout(timeout);
       ref.off('value', listener);
       hideEligTyping();
       eligWaiting = false;

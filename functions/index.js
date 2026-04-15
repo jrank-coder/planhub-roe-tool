@@ -10,6 +10,11 @@ initializeApp();
 const anthropicKey = defineSecret("ANTHROPIC_API_KEY");
 const hubspotKey = defineSecret("HUBSPOT_API_KEY");
 
+// HubSpot fetch with 10-second timeout per call to prevent function-level hangs
+function hsFetch(url, options = {}) {
+  return fetch(url, { ...options, signal: AbortSignal.timeout(10000) });
+}
+
 exports.processROERequest = onValueCreated(
   {
     ref: "/roe-tool/requests/{requestId}",
@@ -136,7 +141,7 @@ function buildUserMessage(request, hubspotContext1, hubspotContext2, aeIdentity)
 
 async function lookupHubSpotOwner(email, apiKey) {
   try {
-    const res = await fetch(
+    const res = await hsFetch(
       `https://api.hubapi.com/crm/v3/owners?email=${encodeURIComponent(email)}&limit=1`,
       { headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" } }
     );
@@ -206,7 +211,7 @@ async function fetchDealData(dealId, apiKey, label = "Deal") {
     "hs_created_by_user_id",
   ].join(",");
 
-  const dealRes = await fetch(
+  const dealRes = await hsFetch(
     `https://api.hubapi.com/crm/v3/objects/deals/${dealId}?properties=${dealProps}&associations=companies,contacts`,
     { headers }
   );
@@ -265,7 +270,7 @@ async function fetchDealData(dealId, apiKey, label = "Deal") {
   // Associated contact
   const contactId = deal.associations?.contacts?.results?.[0]?.id;
   if (contactId) {
-    const contactRes = await fetch(
+    const contactRes = await hsFetch(
       `https://api.hubapi.com/crm/v3/objects/contacts/${contactId}?properties=firstname,lastname,email,phone`,
       { headers }
     );
@@ -302,7 +307,7 @@ async function fetchCompanyData(companyId, apiKey, label = "Company") {
   lines.push(...companyLines);
 
   // Associated deals
-  const dealAssocRes = await fetch(
+  const dealAssocRes = await hsFetch(
     `https://api.hubapi.com/crm/v3/objects/companies/${companyId}/associations/deals`,
     { headers }
   );
@@ -326,7 +331,7 @@ async function fetchCompanyData(companyId, apiKey, label = "Company") {
     `Associated deals (${allDealIds.length} total${allDealIds.length > 5 ? ", showing 5 most recent" : ""}):`
   );
 
-  const batchRes = await fetch(
+  const batchRes = await hsFetch(
     "https://api.hubapi.com/crm/v3/objects/deals/batch/read",
     {
       method: "POST",
@@ -372,7 +377,7 @@ async function fetchContactData(contactId, apiKey, label = "Contact") {
     "Content-Type": "application/json",
   };
 
-  const contactRes = await fetch(
+  const contactRes = await hsFetch(
     `https://api.hubapi.com/crm/v3/objects/contacts/${contactId}?properties=firstname,lastname,email,phone&associations=companies,deals`,
     { headers }
   );
@@ -416,7 +421,7 @@ async function fetchContactData(contactId, apiKey, label = "Contact") {
     `Associated deals (${allDealIds.length} total${allDealIds.length > 5 ? ", showing 5 most recent" : ""}):`
   );
 
-  const batchRes = await fetch(
+  const batchRes = await hsFetch(
     "https://api.hubapi.com/crm/v3/objects/deals/batch/read",
     {
       method: "POST",
@@ -459,11 +464,13 @@ async function fetchContactData(contactId, apiKey, label = "Contact") {
 async function fetchCompanyProperties(companyId, headers) {
   const companyProps = [
     "name", "subscription", "chargebee_status",
-    "chargebee_cancellation_date", "planhub_company_create_date",
-    "domain", "phone", "key_account", "account_manager",
+    "chargebee_cancellation_date", "chargebee_activation_date",
+    "planhub_company_create_date", "domain", "phone",
+    "key_account", "account_manager", "n90_day_success_manager",
+    "company_specialty", "company_partnership_association",
   ].join(",");
 
-  const companyRes = await fetch(
+  const companyRes = await hsFetch(
     `https://api.hubapi.com/crm/v3/objects/companies/${companyId}?properties=${companyProps}`,
     { headers }
   );
@@ -479,10 +486,14 @@ async function fetchCompanyProperties(companyId, headers) {
     `Phone: ${cp.phone || "Unknown"}`,
     `Subscription (company-level): ${cp.subscription || "Unknown"}`,
     `Chargebee status: ${cp.chargebee_status || "Unknown"}`,
+    `Chargebee activation date: ${cp.chargebee_activation_date || "None"}`,
     `Chargebee cancellation date: ${cp.chargebee_cancellation_date || "None"}`,
     `PlanHub registration date: ${cp.planhub_company_create_date || "Unknown"}`,
     `Key account: ${cp.key_account || "No"}`,
     `Account manager: ${cp.account_manager || "Unknown"}`,
+    `n90 day success manager: ${cp.n90_day_success_manager || "None"}`,
+    `Company specialty: ${cp.company_specialty || "Unknown"}`,
+    `Partnership association (company): ${cp.company_partnership_association || "None"}`,
   ];
 }
 
@@ -491,7 +502,7 @@ async function fetchCompanyProperties(companyId, headers) {
 async function fetchCallsForDeal(dealId, headers) {
   const lines = [];
 
-  const callAssocRes = await fetch(
+  const callAssocRes = await hsFetch(
     `https://api.hubapi.com/crm/v3/objects/deals/${dealId}/associations/calls`,
     { headers }
   );
@@ -506,7 +517,7 @@ async function fetchCallsForDeal(dealId, headers) {
     return lines;
   }
 
-  const batchRes = await fetch(
+  const batchRes = await hsFetch(
     "https://api.hubapi.com/crm/v3/objects/calls/batch/read",
     {
       method: "POST",
