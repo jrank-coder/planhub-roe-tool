@@ -6,7 +6,6 @@
 <title>PlanHub ROE Assistant</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <style>
@@ -587,7 +586,30 @@ const firebaseConfig = {
 };
 
 firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
+
+const FUNCTION_URL = 'https://us-central1-planhub-sales-internal-tools.cloudfunctions.net/processROERequest';
+
+async function callROEFunction(payload, onResult, onTimeout) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 90000);
+  try {
+    const res = await fetch(FUNCTION_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+      signal: controller.signal,
+    });
+    clearTimeout(timeout);
+    const result = await res.json();
+    onResult(result);
+  } catch (err) {
+    clearTimeout(timeout);
+    const msg = err.name === 'AbortError'
+      ? 'Request timed out — the analysis is taking longer than expected. Please try again or contact RevOps directly.'
+      : 'Analysis failed. Please try again or contact RevOps directly.';
+    onResult({ type: payload.type, status: 'error', text: msg });
+  }
+}
 
 // ── State ────────────────────────────────────────────────────────────────────
 let selectedSituation = null;
@@ -664,8 +686,7 @@ function submitEligibility() {
 
   eligHistory = [{ role: 'user', content: buildEligUserMessage(payload) }];
 
-  db.ref('/roe-tool/requests/' + requestId).set(payload);
-  listenForEligResult(requestId);
+  callROEFunction(payload, onEligResult);
 }
 
 function buildEligUserMessage(payload) {
@@ -690,57 +711,34 @@ function sendEligFollowup() {
   input.value = '';
   autoResize(input);
 
-  const requestId = generateId();
-  db.ref('/roe-tool/requests/' + requestId).set({
+  callROEFunction({
     type: 'eligibility',
     status: 'pending',
     question: text,
     conversationHistory: [...eligHistory.slice(0, -1)],
     createdAt: Date.now(),
-  });
-
-  listenForEligResult(requestId);
+  }, onEligResult);
 }
 
-function listenForEligResult(requestId) {
-  const ref = db.ref('/roe-tool/results/' + requestId);
+function onEligResult(result) {
+  hideEligTyping();
+  eligWaiting = false;
+  document.getElementById('btn-elig-send').disabled = false;
 
-  const timeout = setTimeout(() => {
-    ref.off('value', listener);
-    hideEligTyping();
-    eligWaiting = false;
-    document.getElementById('btn-elig-send').disabled = false;
-    appendEligMessage('assistant', 'Request timed out — the analysis is taking longer than expected. Please try again or contact RevOps directly.');
-  }, 90000);
+  const text = result.text || 'An error occurred. Please try again.';
+  eligHistory.push({ role: 'assistant', content: text });
 
-  const listener = ref.on('value', snapshot => {
-    const result = snapshot.val();
-    if (!result) return;
-    if (result.status === 'complete' || result.status === 'error') {
-      clearTimeout(timeout);
-      ref.off('value', listener);
-      hideEligTyping();
-      eligWaiting = false;
-      document.getElementById('btn-elig-send').disabled = false;
+  const verdict = parseVerdict(text);
+  if (verdict) {
+    showVerdictCard(verdict, text);
+  }
 
-      const text = result.text || 'An error occurred. Please try again.';
-      eligHistory.push({ role: 'assistant', content: text });
+  const displayText = verdict ? text.replace(/^VERDICT:\s*\S+\s*\n?/, '').trim() : text;
+  if (displayText) appendEligMessage('assistant', displayText);
 
-      const verdict = parseVerdict(text);
-      if (verdict) {
-        showVerdictCard(verdict, text);
-      }
-
-      // Show response in chat (without the VERDICT: line if it's a final verdict)
-      const displayText = verdict ? text.replace(/^VERDICT:\s*\S+\s*\n?/, '').trim() : text;
-      if (displayText) appendEligMessage('assistant', displayText);
-
-      // Hide followup input if we have a verdict
-      if (verdict) {
-        document.getElementById('elig-followup-row').style.display = 'none';
-      }
-    }
-  });
+  if (verdict) {
+    document.getElementById('elig-followup-row').style.display = 'none';
+  }
 }
 
 function showVerdictCard(verdict, fullText) {
@@ -820,8 +818,10 @@ function sendQuestion() {
   input.value = '';
   autoResize(input);
 
-  const requestId = generateId();
-  db.ref('/roe-tool/requests/' + requestId).set({
+  document.getElementById('qa-typing').classList.add('visible');
+  scrollContainer(document.getElementById('qa-messages'));
+
+  callROEFunction({
     type: 'qa',
     status: 'pending',
     question,
@@ -829,24 +829,13 @@ function sendQuestion() {
     userEmail: currentUser?.email || null,
     userName: currentUser?.displayName || null,
     createdAt: Date.now(),
-  });
-
-  document.getElementById('qa-typing').classList.add('visible');
-  scrollContainer(document.getElementById('qa-messages'));
-
-  const ref = db.ref('/roe-tool/results/' + requestId);
-  const listener = ref.on('value', snapshot => {
-    const result = snapshot.val();
-    if (!result) return;
-    if (result.status === 'complete' || result.status === 'error') {
-      ref.off('value', listener);
-      document.getElementById('qa-typing').classList.remove('visible');
-      const text = result.text || 'Sorry, an error occurred. Please try again.';
-      appendQAMessage('assistant', text);
-      qaHistory.push({ role: 'assistant', content: text });
-      qaWaiting = false;
-      document.getElementById('btn-qa-send').disabled = false;
-    }
+  }, result => {
+    document.getElementById('qa-typing').classList.remove('visible');
+    const text = result.text || 'Sorry, an error occurred. Please try again.';
+    appendQAMessage('assistant', text);
+    qaHistory.push({ role: 'assistant', content: text });
+    qaWaiting = false;
+    document.getElementById('btn-qa-send').disabled = false;
   });
 }
 

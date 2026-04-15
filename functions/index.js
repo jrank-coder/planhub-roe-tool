@@ -1,6 +1,5 @@
-const { onValueCreated } = require("firebase-functions/v2/database");
+const { onRequest } = require("firebase-functions/v2/https");
 const { defineSecret } = require("firebase-functions/params");
-const { getDatabase } = require("firebase-admin/database");
 const { initializeApp } = require("firebase-admin/app");
 const Anthropic = require("@anthropic-ai/sdk");
 const { ROE_SYSTEM_PROMPT } = require("./roeSystemPrompt");
@@ -15,23 +14,25 @@ function hsFetch(url, options = {}) {
   return fetch(url, { ...options, signal: AbortSignal.timeout(10000) });
 }
 
-exports.processROERequest = onValueCreated(
+exports.processROERequest = onRequest(
   {
-    ref: "/roe-tool/requests/{requestId}",
-    instance: "planhub-sales-internal-tools-default-rtdb",
     secrets: [anthropicKey, hubspotKey],
     region: "us-central1",
     timeoutSeconds: 120,
     memory: "256MiB",
+    cors: ["https://jrank-coder.github.io"],
   },
-  async (event) => {
-    const requestId = event.params.requestId;
-    const request = event.data.val();
+  async (req, res) => {
+    if (req.method !== "POST") {
+      res.status(405).json({ error: "Method not allowed" });
+      return;
+    }
 
-    if (!request || request.status !== "pending") return;
-
-    const db = getDatabase();
-    const resultRef = db.ref(`/roe-tool/results/${requestId}`);
+    const request = req.body;
+    if (!request) {
+      res.status(400).json({ error: "Missing request body" });
+      return;
+    }
 
     try {
       const fetchPromises = [];
@@ -71,7 +72,7 @@ exports.processROERequest = onValueCreated(
 
       const text = response.content.find((b) => b.type === "text")?.text || "";
 
-      await resultRef.set({
+      res.json({
         type: request.type,
         text,
         status: "complete",
@@ -79,7 +80,7 @@ exports.processROERequest = onValueCreated(
       });
     } catch (err) {
       console.error("ROE processing error:", err);
-      await resultRef.set({
+      res.status(500).json({
         type: request.type,
         text: "Analysis failed. Please try again or contact RevOps directly.",
         status: "error",
