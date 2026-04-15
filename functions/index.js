@@ -18,6 +18,7 @@ function hsFetch(url, options = {}) {
 exports.processROERequest = onValueCreated(
   {
     ref: "/roe-tool/requests/{requestId}",
+    instance: "planhub-sales-internal-tools-default-rtdb",
     secrets: [anthropicKey, hubspotKey],
     region: "us-central1",
     timeoutSeconds: 120,
