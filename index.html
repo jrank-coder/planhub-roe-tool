@@ -283,8 +283,8 @@ input,select,textarea{font-family:var(--f)}
       </div>
 
       <div class="field">
-        <label>HubSpot deal link <span class="req">*</span></label>
-        <input type="url" id="elig-url1" placeholder="https://app.hubspot.com/contacts/.../deal/...">
+        <label>HubSpot Link <span class="req">*</span></label>
+        <input type="url" id="elig-url1" placeholder="https://app.hubspot.com/contacts/.../record/...">
       </div>
 
       <div id="elig-url2-row" class="conditional">
@@ -646,7 +646,7 @@ function submitEligibility() {
   }
   const url1 = document.getElementById('elig-url1').value.trim();
   if (!url1) {
-    alert('Please enter the HubSpot deal link.');
+    alert('Please enter the HubSpot link.');
     document.getElementById('elig-url1').focus();
     return;
   }
